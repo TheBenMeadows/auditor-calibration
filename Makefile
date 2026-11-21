@@ -1,5 +1,5 @@
 PYTHON ?= python3
-TEX ?= tectonic
+TECTONIC ?= tectonic
 
 .PHONY: reproduce check paper provenance
 
@@ -17,4 +17,4 @@ provenance:
 	$(PYTHON) -I scripts/run-provenance.py
 
 paper:
-	cd paper && $(TEX) main.tex
+	cd paper && $(TECTONIC) main.tex
