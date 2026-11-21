@@ -1,0 +1,303 @@
+{
+ "_comment": "Paper case set. label 1 = real finding, 0 = refuted. source = original|council|mutated|fresh. Cases without repo/ref inherit repo and refs[audit]. 2026-10-17: only the 14 mdws-org/squint council cases, for Opus (baseline stays pinned to the 130).",
+ "repo": "TheBenMeadows/tbm",
+ "refs": {
+  "0819": {
+   "sha": "7f50013b094028da0b9630b5972971ecd16e3d68",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-08-19.md"
+  },
+  "0927": {
+   "sha": "96d7b9d",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-09-27.md"
+  },
+  "1007": {
+   "sha": "ca0b665264e45e7c3e76b04f90326e48c5336fdd",
+   "audit": "fresh five-lens audit 2026-10-07"
+  }
+ },
+ "cases": [
+  {
+   "id": "squint-ec53337-upside-down",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "ec533370f0c97e0f4f79323e640243fa96a3724d",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "squint"
+   ],
+   "claim": "CRITICAL: Quartz bitmap context draws pixels vertically upside down. In Core Graphics the default coordinate system of a `CGBitmapContext` places the origin (0,0) at the bottom-left corner with Y pointing upward, while the raw buffer returned by `CGBitmapContextGetData` lays pixel rows top-to-bottom starting at row 0. `core/src/imageio.rs` passes the `CGImage` directly to `CGContextDrawImage` without flipping the context transformation matrix, so it renders the image vertically inverted into the pixel array: any valid HEIC (e.g. an iPhone photo) comes out as a JPEG flipped along the Y axis.",
+   "where": [
+    "core/src/imageio.rs"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-ec53337-index0-primary",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "ec533370f0c97e0f4f79323e640243fa96a3724d",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "squint"
+   ],
+   "claim": "Multi-image HEIC: index 0 is the primary by spec. `CGImageSourceGetCount >= 1` and `CreateImageAtIndex(0)` in `core/src/imageio.rs` is right for burst, live photo and animated HEIF, because the primary is item 0 in the `pitm` sense, and `CGImageSourceCreateImageAtIndex(0)` on a container with a `thmb` item returns the primary, not the thumb.",
+   "where": [
+    "core/src/imageio.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-ec53337-byte-order-constant",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "ec533370f0c97e0f4f79323e640243fa96a3724d",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "The byte order is a constant, not the platform's: `core/src/imageio.rs` passes `K_CG_IMAGE_ALPHA_NONE_SKIP_LAST | K_CG_BITMAP_BYTE_ORDER_DEFAULT` with `K_CG_BITMAP_BYTE_ORDER_DEFAULT = 0`. The value is a literal while the constant's name says \"the platform's default\", so the R,G,B,X layout the engine reads is not actually tied to the host's byte order.",
+   "where": [
+    "core/src/imageio.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-ec53337-hdr-highlight-clamp",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "ec533370f0c97e0f4f79323e640243fa96a3724d",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "squint"
+   ],
+   "claim": "`CGContextDrawImage` does not colour-convert when the context uses the image's own space. For a Display P3 source in `core/src/imageio.rs`, `ctx_cs` is the image's `CGColorSpace` and the context is 8 bpc; if Image I/O hands back a `CGImage` with extended-range components, values above 1.0 clamp to the per-component max. A real iPhone HDR HEIC decoded by Image I/O as extended range will clamp and bleed at exactly the highlights the Email preset exists to show.",
+   "where": [
+    "core/src/imageio.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-c7ea926-vp8x-not-picture",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "c7ea926636dd738b594c5125b71bea685760f4c1",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "In `core/src/webp.rs`, `PICTURE_CHUNKS` includes `b\"VP8X\"`, but `VP8X` is the extended feature header, not an image frame bitstream. `VP8X` should be removed from `PICTURE_CHUNKS` so that `has_picture` strictly requires a true frame (`VP8 ` or `VP8L`); every WebP that carries pixels has one of those two chunks at the top level of its RIFF chain.",
+   "where": [
+    "core/src/webp.rs"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": true,
+   "source": "council"
+  },
+  {
+   "id": "squint-c7ea926-vp8x-flag-clear-safe",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "c7ea926636dd738b594c5125b71bea685760f4c1",
+   "audit": "council",
+   "tags": [
+    "source",
+    "security",
+    "council",
+    "squint"
+   ],
+   "claim": "Clearing the VP8X flags at `out[20]` in `strip_webp` (`core/src/webp.rs`) is safe and correct. Per the WebP container spec `VP8X` must be the first chunk, so the RIFF header is bytes 0..12, the `VP8X` chunk header is bytes 12..20, and the first payload byte holding the feature flags is exactly `out[20]`. The `out.len() > 20` guard prevents out-of-bounds indexing if `VP8X` has a zero-length payload or is cut short, and `&out[12..16] == b\"VP8X\"` ensures the flags are only modified when `VP8X` is in the first-chunk position.",
+   "where": [
+    "core/src/webp.rs"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-c7ea926-zero-length-picture",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "c7ea926636dd738b594c5125b71bea685760f4c1",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "squint"
+   ],
+   "claim": "A WebP containing a picture chunk with a zero-length payload returns `Some` from `strip_webp` (`core/src/webp.rs`) with `wiped > 0`, so the `lib.rs` branch never sees `wiped == 0` and happily emits a \"stripped\" WebP with a blank picture, which `Source::open` then decodes to an image of nothing through an `unwrap_or`-style fallback rather than reporting the blank. `has_picture` needs a payload-length floor.",
+   "where": [
+    "core/src/webp.rs",
+    "core/src/source.rs",
+    "core/src/lib.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-c7ea926-icc-torn-chain",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "c7ea926636dd738b594c5125b71bea685760f4c1",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "squint"
+   ],
+   "claim": "The profile is read through the same torn chain: `icc_profile` in `core/src/webp.rs` swallows the walk's `None` and returns `None`, which is indistinguishable from \"this file carries no `ICCP`\". A wide-gamut WebP cut short in transit therefore loses its profile and comes back untagged, flat, and reported as a success.",
+   "where": [
+    "core/src/webp.rs",
+    "core/src/source.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-pdf-shrink-memory",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "perf",
+    "council",
+    "squint"
+   ],
+   "claim": "Fast-mode PDF rewrites run at core count: `concurrencyLimit` in `app/Sources/JobQueue.swift` returns `cores` unless some job is `.quality`, and a PDF through Shrink is `.fast`, so a batch of PDFs on a 16 GB / 8-core machine runs eight concurrent document rewrites, each holding every decoded picture in a document at once. The 167 MB-per-fast-job figure the concurrency limit rests on was measured for single images, so a PDF batch can exceed it.",
+   "where": [
+    "app/Sources/JobQueue.swift",
+    "core/src/pdf.rs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-heif-readmits-avif",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "`public.heif` likely re-admits AVIF: Apple's UTI tree conforms `public.avif` to `public.heif`, so declaring `public.heif` on the Convert to AVIF Services entry (`app/project.yml`) probably makes Finder offer Convert to AVIF for `.avif` files despite the exclusion, a menu item that always reports failure.",
+   "where": [
+    "app/project.yml",
+    "app/Sources/ServiceProvider.swift"
+   ],
+   "source_model": "devin-swe-2-max",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-job-mode-stored",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "`concurrencyLimit` keys on `job.mode` (`app/Sources/JobQueue.swift`). If `Job` stores a separate `mode` that defaults to `.fast` for preset-created jobs rather than returning `preset.mode`, an AVIF batch runs at core-count concurrency with quality-mode memory, the exact blowup the limit exists to prevent.",
+   "where": [
+    "app/Sources/Job.swift",
+    "app/Sources/JobQueue.swift"
+   ],
+   "source_model": "devin-swe-2-max",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-animated-keeps-one-frame",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "Silent semantic loss: `org.webmproject.webp` includes animated WebP and `public.heif` includes HEIF sequences, so converting either through Convert to AVIF yields a still AVIF, silently dropping every frame after the first.",
+   "where": [
+    "core/src/lib.rs",
+    "core/src/webp.rs",
+    "core/src/heif.rs",
+    "app/project.yml"
+   ],
+   "source_model": "devin-swe-2-max",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-unicode-landsonsource",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "The `landsOnSource` comparison in `app/Sources/JobQueue.swift` is lexical, not filesystem identity. Unicode-normalisation aliases could therefore be a false negative if Foundation constructs the destination with a different normalisation from the source and the volume resolves both to the same entry, letting a conversion be written over its own source.",
+   "where": [
+    "app/Sources/JobQueue.swift",
+    "app/Sources/Preset.swift"
+   ],
+   "source_model": "gpt-6-luna (Kagi)",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "squint-f4890dd-strip-identical-done",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "The queue does not compare `result.data` with the input before writing and marking the job done (`app/Sources/JobQueue.swift`). If an engine mode can succeed with byte-identical output, for example Strip on a file with nothing removable, the app still performs a write and reports completion.",
+   "where": [
+    "app/Sources/JobQueue.swift",
+    "core/src/lib.rs"
+   ],
+   "source_model": "gpt-6-luna (Kagi)",
+   "expanded": false,
+   "source": "council"
+  }
+ ]
+}

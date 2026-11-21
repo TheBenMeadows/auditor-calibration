@@ -1,0 +1,13 @@
+{
+  "_comment": "Per-run limits for scripts/run-provenance.py. max_turns comes from the lane's literal in run-eval.mjs as of acff174 (claude and ccx 40, claude-inline 3; the devin lane passes no turn flag, recorded as 0 = no ceiling). timeout_s is the per-case wall-clock ceiling: the runner default 1800 unless the launch command set --timeout-s. Launch commands were recovered on 2026-11-15 from Claude Code session transcripts on btm; where none was found the entry says so and the default is assumed, not confirmed. The runner's limits at the time of each run were not logged, so an earlier revision may have used other literals.",
+  "baseline": {"max_turns": 40, "timeout_s": 1800, "source": "transcript command: --variant baseline --lane claude --model claude-opus-5-5 [--cases ...] [--approve-harness]; one early form set --timeout-s 1800 explicitly"},
+  "v1": {"max_turns": 0, "timeout_s": 1800, "file_budget_bytes": 120000, "source": "launch command not found in transcripts; runner default assumed (devin lane, no turn flag, DEVIN_FILE_BUDGET)"},
+  "v2": {"max_turns": 40, "timeout_s": 1800, "source": "transcript command: --variant v2 --reps 3 --lane ccx --model deepseek-flash --cases cases-paper-144.json (no --timeout-s)"},
+  "v3": {"max_turns": 40, "timeout_s": 1800, "source": "launch command not found in transcripts; runner default assumed (claude lane)"},
+  "v4": {"max_turns": 40, "timeout_s": 1800, "source": "transcript command: --variant v4 --reps 3 --lane claude --model claude-sonnet-5-5 --cases cases-paper-144.json (no --timeout-s)"},
+  "v5": {"max_turns": 40, "timeout_s": 1800, "source": "launch command not found in transcripts; runner default assumed (claude lane)"},
+  "v6": {"max_turns": 40, "timeout_s": 1800, "source": "transcript command: --variant v6 --reps 1 --lane claude --model claude-fable-5-1 --cases cases-paper-144.json (no --timeout-s)"},
+  "v7": {"max_turns": 40, "timeout_s": 1800, "source": "transcript command: --variant v7 --reps 1 --lane claude --model claude-fable-5-1 --billing session --cases cases-fable-rerun60.json (no --timeout-s)"},
+  "v8": {"max_turns": 3, "timeout_s": 1800, "source": "transcript command: --variant v8 --reps 3 --lane claude-inline --model claude-haiku-5-5 --billing session --cases cases-paper-144.json (no --timeout-s)"},
+  "v10": {"max_turns": 3, "timeout_s": 1800, "source": "transcript command: --variant v10 --reps 1 --lane claude-inline --model claude-haiku-5-5 --billing session --cases cases-paper-squint14.json (no --timeout-s)"}
+}

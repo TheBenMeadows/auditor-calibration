@@ -1,0 +1,358 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{natbib}
+\usepackage{xcolor}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+\setlength{\parskip}{0.35em}
+\setlength{\emergencystretch}{2em}
+\input{numbers}
+
+\title{When the Eval Is Wrong More Often Than the Agent:\\Calibrating Auditors of Code-Review Claims}
+\author{Benjamin Meadows\\Independent Researcher\\\texttt{ben@benjaminmeadows.com}}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Automated code review produces claims, and someone has to decide which ones are true. I evaluate language-model agents that re-check a claim against a repository at a fixed commit and report the probability that it is a real, correct finding. I audit the labels as hard as the agents. In a first pass of 61 cases, five of the agent's eight misses turned out to be faults in the evaluation. The final set has 144 cases (52 real findings, 92 false claims) from three sources with different label provenance. Six lanes (a lane is one model in one harness) ran it: four Claude models in one harness, DeepSeek Flash in the same harness, and SWE-2 in a different harness with the files inline and no tools. The area under the ROC curve (AUROC) runs from \N{swe2-auroc} (SWE-2) to \N{opus-auroc} (Opus 5.5). A rule that knows only where each claim came from, which the lanes were not told, reaches \N{source-rule-auroc}. Few differences between lanes survive correction for multiple comparisons, and the four that survive every label scenario all involve SWE-2. Giving Haiku 5.5 SWE-2's inputs (files inline, no tools) lowers its recall without lowering its specificity, so missing tools do not explain SWE-2's lower specificity. How the target is defined matters more than most differences between lanes: counting a compound claim as real when any defect it alleges is genuine lowers Opus's AUROC from \N{opus-auroc} to \N{td1-opus-auroc}, a drop larger than \N{td1-drop-exceeds} of the 15 pairwise differences. A blind panel of three other models agrees with the frozen labels on \N{panel-agree} of cases (Cohen's $\kappa$ \N{panel-kappa}). All cases come from one maintainer's repositories, and the pairwise tests were chosen after the results were seen, so the comparisons are exploratory. Code, cases and rulings: \todo{repository URL}.
+\end{abstract}
+
+\section{Introduction}
+
+Code-review agents now raise more claims than a maintainer can check by hand. One response is a second agent, a verifier, that re-checks each claim against the code and says how likely it is to be true. If that probability is calibrated, the maintainer can act on the confident calls and read only the uncertain ones.
+
+Measuring a verifier needs labelled claims, and the labels come from the same kind of human review the verifier is meant to support. This paper measures six verifier lanes on 144 labelled claims, and measures the labels with the same care. A harness is the software that sends the prompt, offers the tools and collects the answer; a lane is one model run in one harness. The study is exploratory: one maintainer, four small repositories, and an analysis revised after the results were seen (Section~\ref{sec:analysis}). The main findings are:
+
+\begin{itemize}
+  \item In a small first pass, most of the verifier's misses were errors in the evaluation, not in the verifier (Section~\ref{sec:first}).
+  \item How the case set was built is itself a strong signal. A rule that sees only each claim's source scores above one of the six lanes (Section~\ref{sec:cases}).
+  \item Few differences between lanes survive. One fragile difference between two models in the same harness survives only under the frozen labels; the four that survive every label scenario all involve SWE-2, which also ran in a different harness (Section~\ref{sec:results}).
+  \item Flipping individual disputed labels barely moves Opus's AUROC but changes which pairwise contrasts survive, and one reasonable change to how the target is defined moves AUROC by more than most differences between lanes (Section~\ref{sec:labels}).
+\end{itemize}
+
+\section{Setting}
+
+\paragraph{The repository and its audits.} A personal website's repository (\texttt{TheBenMeadows/tbm}) was audited twice in 2026 by parallel language-model workers. Each worker had its own focus: security and headers, content accuracy, integrity and links, performance and accessibility, or source and governance. The maintainer then ruled on every claim as kept (a real finding), refuted (false), or dropped (true but not worth acting on).
+
+\paragraph{The verifier.} The same maintainer runs a read-only verifier agent that re-checks claims before anyone acts on them. Below, ``production'' means this agent as deployed: its agent definition, tools and harness. The question here is how well its probability tracks the maintainer's ruling, how much the answer depends on the rulings themselves, and what it takes to measure either.
+
+The verifier is a Claude Code agent definition with eleven tools: \texttt{WebFetch} for public HTTPS URLs, and ten read-only tools from the GitHub server for the Model Context Protocol (MCP), covering file contents at a ref, commits, issues, pull requests, code search, releases and tags. It has no shell, no file system and no way to write. For each case it receives the claim as originally raised, with the evidence, verdict and refutation text removed. It also gets the repository, the commit and the paths the claim names. It must return one JSON object with three parts: a verdict in \{true, false, partial\}, the evidence it fetched, and a number $p_{\text{true}} \in [0,1]$, its probability that the claim is a real, correct finding at that commit.
+
+\paragraph{Scoring.} A run is scored right when $p_{\text{true}} \ge 0.5$ matches the label, so a reported 0.50 counts as a call of real. The Brier score \citep{brier1950}, the mean squared error of $p_{\text{true}}$ against the label, measures overall probabilistic accuracy, calibration included. The bare verdict is scored alongside (true $=1$, partial $=0.5$, false $=0$; verdict agreement gives full credit for a verdict that matches the label and half credit for partial), so the production agent's existing output can be compared with the added probability.
+
+\paragraph{The runner.} A runner executes the cases. It fixes the harness by SHA-256 hash, and a changed runner will not run unattended until a human re-approves it. On the Claude lanes it records the model each response reports and fails the attempt if that differs from the model requested. (The lane run behind a proxy accepts any reported model, and the Devin CLI reports none; see Section~\ref{sec:lanes}.) It keeps every raw stream and retries transient provider errors with backoff, under a per-case wall-clock limit. Failed attempts go to a separate file and are never scored; a (case, run) slot whose attempts all failed stays missing.
+
+\section{The first pass, and what it measured}
+\label{sec:first}
+
+The first case set held 61 claims from the two audits: 56 kept and 5 refuted. It was meant to include only claims that can be checked from the repository. Claims about response headers, DNS or Tor reachability were left out, because the live site had changed since. Opus 5.5 ran each case twice for \$24.37 in API-equivalent spend (what the calls cost at API list prices). The mean call took 71 seconds and 4.3 tool calls, not counting the call that returns the verdict (the same basis as Table~\ref{tab:cost}). Recall was 89.3\%, specificity 4 of 5, and AUROC 0.948.
+
+A case counts as missed when the mean $p_{\text{true}}$ of its runs falls on the wrong side of 0.5. The agent missed eight cases. Reading their transcripts traced five of them to the evaluation, not the agent:
+
+\begin{enumerate}
+  \item One case's path list named the wrong repository: the owner's main organisation, not the one where the project actually lives. The agent reported that it could not find the file, which was correct.
+  \item Two cases had been ruled from live measurements: the order of mirrors as served, and duplicate IDs on a rendered transcript page. Neither is visible in the repository at the commit, so both cases were dropped.
+  \item Two human rulings were wrong on the agent's evidence. One kept claim said a release-signing script ``never inspects the exit status, so if every relay rejects the event it exits 0''. The script opens with \texttt{set -euo pipefail}, so a failed publish aborts it. Another kept claim said a theme toggle had no accessible name. Its name comes from CSS \texttt{::before} content, which does count toward the accessible name. Both had been ``fixed'' in pull requests anyway. The maintainer flipped both labels to refuted.
+\end{enumerate}
+
+With those corrections the set has 59 cases (52 kept, 7 refuted), and it scored recall 95.2\% (Wilson 95\% CI [85.7\%, 98.5\%] \citep{wilson1927}), specificity 6 of 7, AUROC 0.979, Brier 0.052, and bare-verdict agreement 90.7\%.
+
+Three misses remained. A kept claim about commit trailer dates scored 0.43, over a UTC-versus-local quibble. A kept claim about external links scored 0.33. A refuted claim scored 0.82, and it is the instructive one. It said an infrastructure page placed a server in Los Angeles. The claim was plausible from the text, and the agent had the IP prefix in hand but never geolocated it, so it reported a confident true. A threshold set from this data would let exactly that failure through.
+
+Two lessons follow. First, seven negatives cannot set a threshold: the specificity interval is [49\%, 97\%]. Second, in a small eval, re-reading the agent's misses is the cheapest audit of the labels available. Here five of eight pointed at the eval.
+
+\section{The case set}
+\label{sec:cases}
+
+Natural false claims are rare: the two audits produced 7 refuted claims against 52 kept. Two more sources added negatives. Each has a different label provenance, so each can be reported separately (Table~\ref{tab:sources}). A further source, a fresh audit round to be ruled by the maintainer, was started (49 claims, merged to 44) and dropped before the ruling was finished. Its three ruled claims are not in the set.
+
+\paragraph{Claims refuted by measurement in earlier reviews (council).} The maintainer runs code reviews by sending a brief to several outside models and then probing every claim before accepting it; these reviews are called council rounds below. The probe records are kept. Across 94 such rounds, 49 claims had been refuted. Of these, 33 concern code or configuration in one of four public repositories at a known commit, and they became cases: 30 quote the reviewing model's own words, with evidence and refutation removed; 3 were expanded from a one-line record. Sixteen were dropped: blog prose, a liturgical fact, private repositories, claims settled from an on-chain transaction or an external registry, an uncommitted patch, and two whose recorded refutation was itself wrong at the commit. By repository: \texttt{mdws-org/squint} 14, \texttt{TheBenMeadows/cookie-tab} 11, \texttt{TheBenMeadows/tbm} 4, \texttt{mdws-org/orthodoxprayers} 4. Each was refuted by someone running the code or reading the file. The 14 Squint claims (the council claims from \texttt{mdws-org/squint}) are reported as their own group below, because one lane fails them far more often than the rest; where results are split by source, ``council'' means the other 19.
+
+\paragraph{Controlled mutations of true findings (mutated).} From the 52 kept findings, 53 false claims were written in four classes:
+\begin{itemize}
+  \item[(A)] a true finding moved to a sibling file where the condition does not hold;
+  \item[(B)] a true finding from the first audit asserted against the later commit, where the fix had landed;
+  \item[(C)] a true finding with one concrete fact changed so it becomes false (a count, a header name, a symbol, a direction);
+  \item[(D)] a plausible defect written about a real file that already has the protection the claim says is missing.
+\end{itemize}
+Classes A to C derive from a parent claim (39 mutants from 29 parents); class D stands alone. Each mutant records the file and line that make it false. A language model from the same family as four of the auditors under test wrote them, in the style of the real claims. The maintainer ruled one claim from a planned stratified sample of twenty, found it real against its constructed label, and it was dropped. That leaves 52 mutants, 13 per class. The label check on the rest is the blind panel of Section~\ref{sec:labels}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrl}
+\toprule
+Source & real & false & label provenance \\
+\midrule
+Original audits (0819, 0927) & 52 & 7 & maintainer ruling on worker claim \\
+Council probes & 0 & 33 & measured refutation in a review round \\
+Mutations A to D & 0 & 52 & constructed; blind panel on all \\
+\midrule
+Total & 52 & 92 & \\
+\bottomrule
+\end{tabular}
+\caption{Case sources. The two original audits are named by date (0819 and 0927: month and day, 2026). The council row includes the 14 Squint claims.}
+\label{tab:sources}
+\end{table}
+
+\paragraph{Two cues in the construction.} An auditor could exploit two features of the set without reading any code. First, every real finding is an original audit claim. A rule that scores every original claim real and every other claim false gets \N{source-rule} (\N{source-rule-pct}) and AUROC \N{source-rule-auroc}, above \N{source-rule-below}'s. The lanes were not given this provenance. Second, every case outside \texttt{TheBenMeadows/tbm} (29 of 144) is false, and the lanes are told the repository. Section~\ref{sec:labels} tests whether a model can read either cue from the text it is given.
+
+\section{Models and harnesses}
+\label{sec:lanes}
+
+Six lanes ran every case.
+
+\paragraph{Same harness.} Opus 5.5, Fable 5.1, Sonnet 5.5 and Haiku 5.5 ran in the production harness with the same agent definition and tools, so they differ only in model. DeepSeek Flash ran the same agent definition and tools in the same Claude Code harness, behind a local proxy, with the GitHub MCP server passed to it per run.
+
+\paragraph{A different harness.} SWE-2 High (Cognition's SWE-2 model at its high reasoning-effort setting) ran through Cognition's Devin command-line interface (CLI) in print mode: non-interactive, one prompt in, one printed answer out. In print mode the CLI exits with status 0 and no output when the model reaches for a file tool, so the runner treats any reply under 20 bytes as a failed attempt. For this lane the files the claim names were therefore pasted inline at the audited commit (numbered, within a 120\,KB budget), and tools were forbidden. The SWE-2 lane sees exactly the named files and nothing else, and it differs from the others in harness as well as model.
+
+\paragraph{Model identifiers.} The runs took place in October 2026. On the Claude lanes the responses reported these model identifiers:
+\texttt{claude-opus-5-5}, \texttt{claude-fable-5-1}, \texttt{claude-sonnet-5-5} and \texttt{claude-haiku-5-5}.
+The proxied lane reported \texttt{deepseek-flash}, and the SWE-2 lane ran as \texttt{swe-2-high}.
+
+\paragraph{Separating condition from model.} To separate SWE-2's condition from its model, Haiku 5.5 also ran in that condition: the same files inline under the same budget, the same prompt text, no tools and no MCP servers, through the Claude Code harness without the agent definition (\N{haiku-inline-runs} runs, \N{haiku-inline-missing} missing). Some harness differences remain between this lane and SWE-2: the Devin CLI has its own system prompt, and the inline lane has a three-turn limit and a JSON schema for its verdict, while the SWE-2 lane has no turn limit and its verdict is parsed from printed output. The plan also called for Sonnet 5.5 in the same condition; that lane was not run.
+
+\paragraph{Repetitions and failures.} Every lane ran every case three times, except Fable 5.1, which ran once. (A second Fable run on a sample is in Section~\ref{sec:results}.) Opus 5.5's first repetition of the 130 non-Squint cases ran five days before the rest: AUROC \N{opus-b1-auroc} on that repetition against \N{opus-b2-auroc} on the other two. Model failures (unparseable output, a forbidden tool) stay missing. They are \N{haiku-missing} of Haiku's 432 (case, run) slots, \N{deepseek-missing} of DeepSeek's and \N{swe2-missing} of SWE-2's. Every case has at least one completed run in every lane. Table~\ref{tab:cost} gives spend and effort. The four Claude lanes billed \$\N{claude-cost} at the reported rates.
+
+\begin{table}[h]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/cost}}
+\caption{Spend and effort per lane over completed runs. The Claude lanes bill the Anthropic API at the reported figure. $^\ast$The DeepSeek figure is the harness's estimate at Anthropic list prices, not the provider's bill. The SWE-2 lane ran on a free tier. Verdict agreement scores the bare verdict against the label.}
+\label{tab:cost}
+\end{table}
+
+\section{Analysis}
+\label{sec:analysis}
+
+\paragraph{Unit and endpoints.} The unit is the case. Results use the maintainer's labels as they stand after the corrections of Section~\ref{sec:first}, called the frozen labels; Section~\ref{sec:labels} varies them. Some cases were ruled from evidence outside the files the claim names (a dependency's behaviour, a live header, a rendered page); these are the outside-files cases, counted in Section~\ref{sec:labels}. For AUROC, a case's $p_{\text{true}}$ is the exact mean of its completed runs, and cases are ranked by it. For accuracy, recall and specificity, each completed run is first scored right or wrong at 0.5, and a case's correctness is the share of its completed runs that are right (so with three runs it is 0, a third, two thirds or 1). The primary endpoint is AUROC of $p_{\text{true}}$ \citep{hanley1982}. Accuracy, recall, specificity and Brier are secondary.
+
+\paragraph{Intervals.} Intervals come from a percentile bootstrap that resamples claim families \citep{efron1993,field2007}. A family is an original claim together with every mutant derived from it and any council claim that restates it (three do). That gives \N{families} families over 144 cases, the largest holding \N{largest-family}; the bootstrap uses \N{boot} draws. Where the bootstrap cannot bound a recall or specificity cell (Fable's 52 of 52), the Clopper-Pearson interval is used \citep{clopper1934}.
+
+\paragraph{Tests.} Pairwise AUROC differences use the same bootstrap, with two $p$-value constructions. Write $d$ for the observed difference and $d^\ast$ for a bootstrap draw. The tail construction counts the draws below zero and above zero, splitting draws at exactly zero evenly, and takes twice the smaller share; the smaller side is called the small tail below. It is the inverse of the printed percentile interval. The reflected construction is the share of draws with $|d^\ast - d| \ge |d|$. The two disagree on this data because the differences are skewed near the AUROC ceiling.
+
+Secondary differences use a paired sign-flip test that flips whole claim families. It is enumerated exactly up to 20 families with a non-zero difference, and uses 20,000 random sign assignments above that; the surviving accuracy comparisons with SWE-2 fall in the second case. Holm's procedure \citep{holm1979} corrects within each metric family across the 15 lane pairs.
+
+Fable 5.1 has one run per case, so its correctness is 0 or 1 where the other lanes have thirds, and the sign-flip test is not exchangeable for its pairs. Those pairs are also tested against the three-run lane reduced to one run per case, redrawn 200 times. I report the median $p$ and the share of draws under the Bonferroni cut $0.05/15$.
+
+\paragraph{What was decided after seeing the data.} None of this was pre-registered. The analysis plan was written after five lanes had finished and their summaries had been read. It named DeLong's test \citep{delong1988} for AUROC; the claim-family bootstrap replaced it after the first round of outside review of the results by other language models (see Use of AI tools). The tail construction was made primary after both constructions had been computed. The plan's change log records each change with its date and, where one was recorded at the time, its reason. Three departures were added to the log only after a later check: the Holm family of Table~\ref{tab:harness}; reporting the inline lane's own results, where the plan said to report only the share of each gap that its condition explains; and the fresh audit round of Section~\ref{sec:cases}, which the plan had made a fourth case source and which was never ruled or run.
+
+\section{Results}
+\label{sec:results}
+
+\begin{table}[t]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/lanes}}
+\caption{Per lane, frozen labels, 144 cases (52 real, 92 false). Fable ran once per case, the others three times. Intervals: claim-family percentile bootstrap; Fable's recall interval is Clopper-Pearson.}
+\label{tab:lanes}
+\end{table}
+
+\subsection{Primary endpoint: AUROC}
+
+Table~\ref{tab:lanes} gives each lane, and Table~\ref{tab:aurocpairs} the pairwise differences.
+
+\paragraph{Opus 5.5 against SWE-2.} Opus 5.5 separates real findings from false claims better than SWE-2 High under the tail construction: difference \N{au-opus-swe2-diff}, pointwise 95\% CI [\N{au-opus-swe2-lo}, \N{au-opus-swe2-hi}], no draw on the small side, Holm \N{au-opus-swe2-holm}. It does not survive the reflected construction (Holm \N{au-opus-swe2-choolm}). The two lanes differ in harness as well as model.
+
+\paragraph{Opus 5.5 against Haiku 5.5.} Opus 5.5 also exceeds Haiku 5.5 under the tail construction (\N{au-opus-haiku-diff}, [\N{au-opus-haiku-lo}, \N{au-opus-haiku-hi}], Holm \N{au-opus-haiku-holm}). This is the only surviving difference between two models in one harness, and it is fragile. Its Holm value rests on \N{au-opus-haiku-small} of the \N{boot} draws falling in the small tail, with a Monte Carlo error of about $\pm$\N{au-opus-haiku-holm-mc}. It holds under none of the label scenarios of Section~\ref{sec:labels}. It does strengthen without the \N{outside-n} outside-files cases (Holm \N{in-au-opus-haiku-holm}). Scoring failed runs as wrong cannot test it, because AUROC uses completed runs only.
+
+\paragraph{The other 13 pairs.} No difference survives Holm. Their pointwise intervals reach at most \N{bound-core} among Opus, Fable, Sonnet and DeepSeek; \N{bound-haiku} for the remaining pairs with Haiku; and \N{bound-swe2} for the remaining pairs with SWE-2. These figures bound what the intervals contain; they are not an equivalence test. Fable against SWE-2 comes nearest. Against SWE-2 reduced to one run per case, the difference is \N{au-fable-swe2-sr-diff}, and \N{au-fable-swe2-sr-share} of 200 redraws fall under the Bonferroni cut, so whether it survives depends on which runs are drawn.
+
+\paragraph{Within the original claims.} On the 59 original claims alone (Table~\ref{tab:original}), every lane's interval reaches 1 and no pair can be told apart. With only seven false claims, many bootstrap draws leave two lanes tied.
+
+\begin{table}[h]
+\centering\small
+\input{tables/original}
+\caption{Within the 59 original audit claims (52 real, 7 false). Intervals: claim-family percentile bootstrap.}
+\label{tab:original}
+\end{table}
+
+\begin{table}[h]
+\centering\small
+\input{tables/auroc-pairs}
+\caption{Pairwise AUROC differences, claim-family bootstrap, Holm-adjusted over 15 pairs. Intervals are pointwise. A $p$ printed with $<$ had no draw on the small side.}
+\label{tab:aurocpairs}
+\end{table}
+
+\subsection{Secondary endpoints}
+
+Every difference that survives the exchangeable family-level sign-flip tests involves SWE-2 High (Table~\ref{tab:secondary}):
+\begin{itemize}
+  \item Accuracy: Opus (\N{acc-opus-swe2-diff}, Holm \N{acc-opus-swe2-holm}), Sonnet (\N{acc-sonnet-swe2-diff}, \N{acc-sonnet-swe2-holm}) and DeepSeek (SWE-2 minus DeepSeek \N{acc-swe2-deepseek-diff}, Holm \N{acc-swe2-deepseek-holm}) are above SWE-2.
+  \item Specificity: Opus (\N{spec-opus-swe2-diff}, \N{spec-opus-swe2-holm}), Sonnet (\N{spec-sonnet-swe2-diff}, \N{spec-sonnet-swe2-holm}), Haiku (\N{spec-haiku-swe2-diff}, \N{spec-haiku-swe2-holm}) and DeepSeek (\N{spec-swe2-deepseek-diff}, \N{spec-swe2-deepseek-holm}) are above SWE-2.
+  \item Recall: no difference survives.
+\end{itemize}
+
+\paragraph{Among the same-harness lanes.} Opus, Sonnet, Haiku and DeepSeek have exchangeable pairs. Among them no secondary difference survives when failed runs are left missing. That depends on how failures are handled. Scoring Haiku's \N{haiku-missing} failed runs as wrong makes Opus and Sonnet exceed Haiku on accuracy (Holm \N{fw-acc-opus-haiku-holm}, \N{fw-acc-sonnet-haiku-holm}) and on recall (\N{fw-rec-opus-haiku-holm}, \N{fw-rec-sonnet-haiku-holm}). Fable's $p$ for the same two contrasts (\N{fw-acc-fable-haiku-holm}, \N{fw-rec-fable-haiku-holm}) is descriptive, as for every one-run pair, and no single-run check was run under this scoring. Dropping the \N{outside-n} outside-files cases makes Opus exceed Haiku on accuracy (Holm \N{in-acc-opus-haiku-holm}).
+
+\paragraph{Fable.} Fable's standing rests on the single-run comparison. Against SWE-2 on accuracy, the median $p$ is \N{acc-fable-swe2-sr-p}, with \N{acc-fable-swe2-sr-share} of draws under the Bonferroni cut, so the result depends on which runs are drawn. Against Haiku on recall (\N{rec-fable-haiku-diff} against three-run Haiku), the single-run comparison cannot settle the contrast either way. Fable missed no real findings, so passing the Bonferroni cut needs a redraw in which Haiku's one drawn run per case misses ten of them; about 0.55\% of Haiku redraws do.
+
+\begin{table}[h]
+\centering\small
+\input{tables/secondary}
+\caption{Pairwise secondary differences, family-level sign-flip, Holm-adjusted within each metric. $^\dagger$One run against three: the sign-flip is not exchangeable and the $p$ is descriptive; see the single-run comparison in the text.}
+\label{tab:secondary}
+\end{table}
+
+\paragraph{Where SWE-2 loses.} The SWE-2 gap is not spread evenly. Its specificity on the 14 Squint claims is \N{swe2-squint-spec}, against \N{squint-spec-others-min} to \N{squint-spec-others-max} for the other lanes; with 14 claims these figures are imprecise. Of its losses on false claims, \N{swe2-outside-loss-share} fall in the \N{outside-false} false claims whose refutation the maintainer drew from evidence outside the files the lane was shown. Without the \N{outside-n} outside-files cases its specificity rises to \N{swe2-inside-spec}, and its specificity contrasts with Opus, Sonnet and Haiku still survive (Holm \N{in-spec-opus-swe2-holm}, \N{in-spec-sonnet-swe2-holm}, \N{in-spec-haiku-swe2-holm}).
+
+\subsection{Model or condition?}
+
+SWE-2 differs from the other lanes in both model and condition. Running Haiku 5.5 in SWE-2's condition (Table~\ref{tab:harness}) separates the two in part.
+
+\paragraph{Haiku with and without tools.} Haiku keeps its AUROC without tools: \N{haiku-inline-auroc} against \N{haiku-auroc} with tools (difference \N{hd-haiku-haiku-inline-diff}, [\N{hd-haiku-haiku-inline-lo}, \N{hd-haiku-haiku-inline-hi}]). It keeps its specificity (\N{haiku-inline-specificity} against \N{haiku-specificity}). It loses recall (\N{haiku-inline-recall} against \N{haiku-recall}; difference \N{hd-haiku-haiku-inline-rec-diff}, Holm \N{hd-haiku-haiku-inline-rec-holm}). Without tools it calls fewer real findings real, and no more false claims real.
+
+\paragraph{Inline Haiku against SWE-2.} In the same condition, Haiku is more specific than SWE-2 by \N{hd-haiku-inline-swe2-spec-diff} (Holm \N{hd-haiku-inline-swe2-spec-holm}) and less sensitive by \N{hd-haiku-inline-swe2-rec-diff} (Holm \N{hd-haiku-inline-swe2-rec-holm}). No AUROC difference is detected (\N{hd-haiku-inline-swe2-diff}, Holm \N{hd-haiku-inline-swe2-holm}).
+
+These Holm values run over the two contrasts that ran. The plan fixed four; with $p=1$ for the two that did not run, the recall loss has Holm \N{hd-haiku-haiku-inline-rec-holm-planned}, and the contrasts with SWE-2 have \N{hd-haiku-inline-swe2-spec-holm-planned} (specificity) and \N{hd-haiku-inline-swe2-rec-holm-planned} (recall).
+
+\paragraph{What this means.} At the point estimate, the tool-free condition accounts for none of the Haiku-minus-SWE-2 specificity gap, and its interval allows only a small part. The share of that gap it explains is \N{share-haiku-specificity} [\N{share-haiku-specificity-lo}, \N{share-haiku-specificity-hi}]. The share is Haiku's specificity with tools minus without, divided by Haiku's with tools minus SWE-2's; it is negative here because removing tools moved Haiku's specificity away from SWE-2's, not toward it. For AUROC and accuracy, the Haiku-minus-SWE-2 gaps are too small for a share to mean anything (intervals [\N{share-haiku-auroc-lo}, \N{share-haiku-auroc-hi}] and [\N{share-haiku-accuracy-lo}, \N{share-haiku-accuracy-hi}]). What still separates the inline Haiku lane from SWE-2 is the model plus the remaining harness differences: the Devin CLI's system prompt, the turn limit, and how the verdict is returned. The Opus and Sonnet contrasts with SWE-2 are not decomposed here.
+
+\begin{table}[h]
+\centering\small
+\resizebox{\textwidth}{!}{\input{tables/harness}}
+\caption{Harness decomposition: planned paired contrasts on the 144 cases, claim-family bootstrap for AUROC and family-level sign-flips for the rest, Holm within each metric across the two contrasts that ran. The plan fixed Holm across four contrasts; with $p=1$ for the two Sonnet contrasts that did not run, Holm gives, for the two rows in order, tail AUROC \N{hd-haiku-haiku-inline-holm-planned} and \N{hd-haiku-inline-swe2-holm-planned}, accuracy \N{hd-haiku-haiku-inline-acc-holm-planned} and \N{hd-haiku-inline-swe2-acc-holm-planned}, recall \N{hd-haiku-haiku-inline-rec-holm-planned} and \N{hd-haiku-inline-swe2-rec-holm-planned}, specificity \N{hd-haiku-haiku-inline-spec-holm-planned} and \N{hd-haiku-inline-swe2-spec-holm-planned}.}
+\label{tab:harness}
+\end{table}
+
+\subsection{Which false claims get through}
+
+Table~\ref{tab:classes} breaks specificity down by source and mutation class. Every lane rejects classes A (wrong file), B (already fixed) and D (invented mechanism) on every completed run, with one exception: one run of one class-B case for SWE-2.
+
+Class C, a true claim with one concrete fact changed, is the only mutant class that every lane sometimes accepts: specificity on class C runs from \N{classC-min} to \N{classC-max}. Two of its 13 mutants state a wrong count inside a real defect; the count-tolerance scenario (S3 in Section~\ref{sec:labels}) and the panel treat both as real. Without them, class C runs from \N{classC-rest-min} to \N{classC-rest-max}, and \N{classC-full-lanes} of the six lanes reject all \N{classC-rest-n}. For those lanes, every mutant they miss is one of the two: a question about the label, not a failure to read the file.
+
+The lanes lose most on the natural false claims (original, council and Squint), from \N{natural-min} to \N{natural-max}.
+
+\begin{table}[h]
+\centering\small
+\input{tables/classes}
+\caption{Specificity (mean case correctness) by false-claim source and mutation class.}
+\label{tab:classes}
+\end{table}
+
+\subsection{Run-to-run variability}
+
+Fable's comparisons rest on one run per case, so the plan specified a second Fable run before it ran: a seeded draw of \N{fv-drawn} cases, stratified by source and class. The API credit ran out after 36 of them. The remaining 24 ran on the maintainer's subscription login the same day, a change of billing route that does not reach the model.
+
+On the \N{fv-n} cases, Fable was right on both runs for \N{fv-both-k} (\N{fv-both}, Clopper-Pearson [\N{fv-both-lo}, \N{fv-both-hi}]). Its two runs fell on opposite sides of 0.5 for \N{fv-flips} cases (\N{fv-flip-rate}), and $p_{\text{true}}$ moved by \N{fv-dp} on average. On the same cases, a pair of runs from a three-run lane disagrees on \N{fv-flip-min} to \N{fv-flip-max} of cases and is right on both \N{fv-pair-min} to \N{fv-pair-max} of the time (Opus \N{fv-opus-pair}, Sonnet \N{fv-sonnet-pair}, DeepSeek \N{fv-deepseek-pair}, SWE-2 \N{fv-swe2-pair}, Haiku \N{fv-haiku-pair}). Fable's figures sit inside both ranges, so its single run is not visibly less stable than a run from the other lanes. The interval is wide.
+
+\subsection{Calibration}
+
+Table~\ref{tab:calibration} bins each lane's case-level $p_{\text{true}}$, the mean over its runs. (The Brier score averages over runs instead.) Most cases sit in the outer bins, but those bins are not uniformly calibrated. Opus's top bin states \N{cal-opus-b5-mean} and is \N{cal-opus-b5-share} real across \N{cal-opus-b5-n} cases. Fable's states \N{cal-fable-b5-mean} and is \N{cal-fable-b5-share} real across \N{cal-fable-b5-n}. Among bins of more than two cases, the largest miscalibration is SWE-2's fourth bin: \N{cal-swe2-b4-n} cases at a mean of \N{cal-swe2-b4-mean}, of which \N{cal-swe2-b4-share} are real. No intervals are given for the bins. Brier ranges from \N{opus-brier} (Opus) to \N{swe2-brier} (SWE-2).
+
+\begin{table}[h]
+\centering\small
+\input{tables/calibration}
+\caption{Case-level calibration: cases in the bin, mean $p_{\text{true}}$ / share real.}
+\label{tab:calibration}
+\end{table}
+
+\section{The labels}
+\label{sec:labels}
+
+\subsection{A blind panel}
+
+Three models that were not evaluated (Gemini 4 Argon, Kimi K3, Grok 4.7) labelled all 144 cases from the claim and the files it names at the commit, with no tools. Their majority agrees with the maintainer on \N{panel-agree-n} cases (\N{panel-agree}, Cohen's $\kappa$ \N{panel-kappa} \citep{cohen1960}; Fleiss' $\kappa$ \N{panel-fleiss} across the three models \citep{fleiss1971}). Agreement is \N{panel-orig-agree} on the original claims ($\kappa$ \N{panel-orig-kappa}), \N{panel-mut-agree} on the mutants, \N{panel-council-agree} on the council claims and \N{panel-squint-agree} on the Squint claims. This is agreement between three readers and one maintainer who had more evidence. It is not a measure of label correctness.
+
+A vote of exactly 0.50 counts as real for the panel, as for the lanes. \N{panel-half-votes} of \N{panel-votes} votes sat there. Counting them as false instead changes the majority on \N{panel-strict-flips} cases, some toward the frozen label and more away from it, and lowers agreement to \N{panel-strict-n} (\N{panel-strict-agree}).
+
+The \N{panel-disputes} disputes fall into four groups:
+\begin{itemize}
+  \item The maintainer attributes \N{outside-n} to evidence outside the files: a dependency's behaviour, a live header default, a rendered image, dead URLs, or intended behaviour. \N{outside-real} of these are real findings and the rest false claims.
+  \item Two are claims the maintainer had already flagged as doubtful.
+  \item Two are mutants that state a wrong count inside a real defect, which the panel called real unanimously.
+  \item One has every vote within 0.02 of 0.50.
+\end{itemize}
+Excluding the \N{outside-n}, all of them disputes, agreement is \N{panel-inside-n} (\N{panel-inside-agree}, $\kappa$ \N{panel-inside-kappa}). That removes only disagreements, so it is an upper bound. ``Real'' in this paper means true of the repository at the commit, by any evidence the maintainer can show. The \N{outside-n} disputes show that the panel and the maintainer judged from different evidence. They settle neither side.
+
+\subsection{Label scenarios}
+
+The frozen labels are primary. Four post-hoc scenarios recompute every lane (Table~\ref{tab:scenarios}):
+\begin{itemize}
+  \item[S1] The Los Angeles claim of Section~\ref{sec:first} is real, under a reading that looks only at the artifact.
+  \item[S2] A claim about ``N editions'' is false, reading N as a run size.
+  \item[S3] Count tolerance: the two wrong-count mutants are real, because the wrong count does not create the defect. The frozen labels already apply this standard to one original claim that overstates its number of dead citations (three claimed, two dead) and stays real.
+  \item[S4] All four flips at once.
+\end{itemize}
+
+The tail AUROC verdict on Opus against SWE-2 holds under all four; its accuracy and specificity contrasts do not survive S4. The verdict on Opus against Haiku falls under all four. Sonnet against SWE-2, which does not survive under the frozen labels, does under S1 and S4. Under S4 Sonnet has the highest accuracy (\N{ls4-sonnet-accuracy}) and the same AUROC as Opus to three decimals.
+
+Four contrasts survive under the frozen labels and every scenario, and all of them involve SWE-2: Opus above it on AUROC, Sonnet above it on accuracy and on specificity, and Haiku above it on specificity.
+
+\subsection{A different target}
+
+Each mutant was built to be false, but some are compound: they allege two defects, one of which is genuine. Consider a rule that scores a compound claim real when any defect its own text alleges is genuine (existential aggregation). Under that rule four mutants move (T1, \N{td1-real} real). T2 combines T1 with count tolerance, S3 (\N{td2-real} real); T3 combines T1 with all four flips, S4 (\N{td3-real} real). Five lanes and the panel majority scored those four claims as false, and SWE-2 split on one.
+
+The rule alone lowers every lane's AUROC (Opus from \N{opus-auroc} to \N{td1-opus-auroc}) and recall (Opus from \N{opus-recall} to \N{td1-opus-recall}). Opus's drop of \N{td1-opus-drop} is larger than \N{td1-drop-exceeds} of the 15 pairwise differences in Table~\ref{tab:aurocpairs}, and smaller than the largest (\N{lane-gap-max}). The Opus against SWE-2 contrast survives T1 and T2 and falls under T3 (Holm \N{td3-au-opus-swe2-holm}). This measures the definition of the target, not the auditors.
+
+\begin{table}[h]
+\centering\small
+\input{tables/scenarios}
+\caption{AUROC per lane and Holm-adjusted tail $p$ for three pairs under the frozen labels, the four label scenarios (S1 to S4) and the three target-definition scenarios (T1: existential aggregation alone; T2: with count tolerance; T3: with all four flips). Nothing is adjusted across scenarios.}
+\label{tab:scenarios}
+\end{table}
+
+\subsection{Reading the construction from the text}
+
+Two probes asked whether a model can see the set's construction without the code.
+
+\paragraph{Source from the text.} Haiku 5.5 was given a tbm claim's text alone and told that the set mixes original and mutated claims. It named the source correctly on \N{sc-right} of \N{sc-n} (\N{sc-pct}, against a base rate of \N{sc-base}; AUROC \N{sc-auroc}). It called \N{sc-called-original} of them original and caught \N{sc-caught} of the \N{sc-mutants} mutants.
+
+\paragraph{Repository name.} Haiku 5.5 and Sonnet 5.5 then rated every claim with no code, once with its repository named and once with the name withheld. Every non-tbm claim is false, so a lower $p_{\text{true}}$ is the right direction there and the wrong one on real tbm findings. Naming the repository moved Sonnet's mean $p_{\text{true}}$ on the \N{rc-sonnet-nontbm-n} non-tbm claims it rated in both conditions (one of the 29 lacked a usable rating in one) by \N{rc-sonnet-nontbm-shift} (sign-flip $p$ \N{rc-sonnet-nontbm-p}) and left its tbm false claims at \N{rc-sonnet-tbmfalse-shift}: a small cue toward the right answer. Haiku lowered every group (non-tbm \N{rc-haiku-nontbm-shift}, tbm false \N{rc-haiku-tbmfalse-shift}), and its tbm real findings most (\N{rc-haiku-tbmreal-shift}, sign-flip $p$ \N{rc-haiku-tbmreal-p}), toward the wrong answer. So this probe shows no repository cue that helps Haiku.
+
+The claim text still names files, so withholding the repository name does not remove every cue. With the name withheld, Sonnet still rates the non-tbm claims at \N{rc-sonnet-nontbm-withheld} against \N{rc-sonnet-tbmfalse-withheld} for the tbm false claims. From the text alone the two models reach AUROC \N{rc-haiku-named-auroc} and \N{rc-sonnet-named-auroc} with the name, and \N{rc-haiku-withheld-auroc} and \N{rc-sonnet-withheld-auroc} without it. Within tbm they reach \N{rc-haiku-named-tbm-auroc} and \N{rc-sonnet-named-tbm-auroc} with the name and \N{rc-haiku-withheld-tbm-auroc} and \N{rc-sonnet-withheld-tbm-auroc} without. The lanes that read the files reach \N{swe2-auroc} to \N{opus-auroc}.
+
+Both probes are one prompt each and use evaluated lanes (Haiku in the first, Haiku and Sonnet in the second). Neither shows how much the cues contribute when the code is also in view.
+
+\section{Related work}
+
+LLM-as-a-judge evaluations \citep{zheng2023judging} score outputs by preference. The agents here score a factual claim against a fixed artifact. That is closer to the critic setting of \citet{mcaleese2024critics}, where models flag bugs for humans to confirm.
+
+The closest task is LLM triage of static-analysis warnings. LLift \citep{li2024llift} and LLM4SA \citep{wen2024llm4sa} ask a model whether an analyser's warning is a real bug, giving it code context retrieved for that warning, and score it as a filter against confirmed bugs. The verifier here does the same job for claims written by other models rather than by an analyser, states a probability rather than a decision, and is scored against labels that are themselves audited.
+
+Confidence elicited from language models is known to be usable but imperfect \citep{kadavath2022know,tian2023calibration}, and verbalized confidence in particular tends to be overconfident \citep{xiong2024uncertainty}. On code, \citet{spiess2025calibration} find that language models are not well calibrated about the correctness of code out of the box. $p_{\text{true}}$ here is a verbalized elicitation, scored against human rulings.
+
+That human labels carry errors is the oldest problem in benchmark construction. \citet{northcutt2021label} found label errors in all ten common test sets they examined. Model rankings were unaffected at the observed error rates, but changed on the subset of corrected examples and would change if the share of mislabeled examples rose by a few percent. SWE-bench Verified \citep{openai2024swebenchverified} was produced by having annotators screen a coding benchmark for under-specified or impossible tasks. In software engineering, \citet{herzig2013notabug} found that about a third of issue reports filed as bugs were misclassified, enough to bias bug-prediction models, and \citet{liu2023evalplus} showed that weak test suites in code-generation benchmarks change how models rank.
+
+Constructed negatives have their own history. Mutation testing \citep{demillo1978} judges a test suite by the faults it catches; the class-C mutants here judge an auditor the same way. Construction cues that a model can exploit without solving the task are documented as annotation artifacts \citep{gururangan2018} and shortcut learning \citep{geirhos2020}. In fact verification, claim-only classifiers rival models that read the evidence \citep{schuster2019debiasing}. When base rates differ by source, sorting by source alone can score well: hospital site did so for pneumonia in chest radiographs \citep{zech2018pneumonia}. Closest to this paper, \citet{kang2022falsealarms} traced near-perfect results in static-analysis false-alarm detection to label leakage and duplication between training and test data, and found the heuristic labels disagreeing with human ones. The source and repository cues of Section~\ref{sec:cases} are instances of the same problem.
+
+\citet{fan2026harness} vary the components of a coding-agent harness one at a time and find that each component's value depends on the model. That is why the SWE-2 lane is reported as a different harness, not folded into a model comparison.
+
+\section{Limitations}
+
+One maintainer produced every label, including the corrections. Label error is therefore measured only against that maintainer's later judgement with more evidence, and against a panel that saw less.
+
+The mutants were written by a model from the same family as four of the auditors. The panel is from other families, but it judged from the files alone.
+
+The four repositories are small and belong to one person, and every real finding comes from one of them. Specificity is mostly mutant rejection: of the 92 false claims, 7 are original.
+
+The SWE-2 lane differs in harness as well as model. The inline Haiku lane that separates the two still differs from SWE-2 in the Devin CLI's system prompt, the turn limit and how the verdict is returned. Opus's runs span two batches five days apart, and Fable's second run covers \N{fv-n} cases on two billing routes.
+
+The analysis was revised after the results were seen, through three rounds of outside review, and the choice of the primary $p$ construction is among those revisions.
+
+These limits are stated so the numbers are read as what they are: six auditors on one operator's code, with the labels audited as hard as the agents.
+
+\section{Conclusion}
+
+On the pooled set, all six verifier lanes reach AUROC between \N{swe2-auroc} and \N{opus-auroc}, though specificity there rests mostly on rejecting constructed mutants. At the point estimates, Opus's drop under one reasonable change to the target definition exceeds two-thirds of the differences between lanes. Of the eight cases the agent missed in the first pass, five traced to the case set or the labels rather than to the agent, and a rule that sees only how each case was built outscores one of the lanes. For anyone measuring a verifier on their own claims, the practical step is the one that paid off here: read every miss before trusting the label, and report each case source separately.
+
+\section*{Use of AI tools}
+
+Language models are part of the subject of this paper and were also used to produce it.
+\begin{itemize}
+  \item Claude Code, running Claude Opus 5.5, wrote the runner and analysis scripts and drafted the text under the author's direction; the author set the questions, made every ruling and analysis decision, and edited the text.
+  \item A Claude model wrote the mutated claims (Section~\ref{sec:cases}).
+  \item Models from other providers (among them GPT-6 Astra, Gemini 3.8 Flash, Gemini 4 Argon and Carbon, Kimi K3, Grok 4.7, DeepSeek Flash and SWE-2) reviewed the analysis and drafts in several rounds. Their reviews changed the analysis plan, including the AUROC test (Section~\ref{sec:analysis}). Every claim a review made was checked by rerunning the computation or reading the file before it was acted on.
+  \item The blind panel of Section~\ref{sec:labels} is itself a set of models.
+  \item Every reference was checked against its primary listing (publisher, DBLP, arXiv or Crossref).
+\end{itemize}
+Every number in the text is generated from the analysis outputs by script, and an audit that recomputed the numbers from source with models of other families checked them before release. The author is responsible for the paper's content.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

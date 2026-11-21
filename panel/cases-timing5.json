@@ -1,0 +1,102 @@
+{
+ "_comment": "Paper case set. label 1 = real finding, 0 = refuted. source = original|council|mutated|fresh. Cases without repo/ref inherit repo and refs[audit]. 2026-10-17: the 130 fixed cases + the 14 mdws-org/squint council cases; fresh claims dropped (Ben, grill-me). Five-case timing sample for the blind panel.",
+ "repo": "TheBenMeadows/tbm",
+ "refs": {
+  "0819": {
+   "sha": "7f50013b094028da0b9630b5972971ecd16e3d68",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-08-19.md"
+  },
+  "0927": {
+   "sha": "96d7b9d",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-09-27.md"
+  },
+  "1007": {
+   "sha": "ca0b665264e45e7c3e76b04f90326e48c5336fdd",
+   "audit": "fresh five-lens audit 2026-10-07"
+  }
+ },
+ "cases": [
+  {
+   "id": "squint-f4890dd-unicode-landsonsource",
+   "label": 0,
+   "repo": "mdws-org/squint",
+   "ref": "f4890ddab8e9fe8d9f590968dd5c7b68803133da",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "squint"
+   ],
+   "claim": "The `landsOnSource` comparison in `app/Sources/JobQueue.swift` is lexical, not filesystem identity. Unicode-normalisation aliases could therefore be a false negative if Foundation constructs the destination with a different normalisation from the source and the volume resolves both to the same entry, letting a conversion be written over its own source.",
+   "where": [
+    "app/Sources/JobQueue.swift",
+    "app/Sources/Preset.swift"
+   ],
+   "source_model": "gpt-6-luna (Kagi)",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "0819-build-feed-empty",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`scripts/build-feed.mjs` catches a git failure, warns, and still writes a valid-looking empty feed with a hardcoded `2026-01-01` timestamp instead of throwing, so a broken build produces a signed, manifest-hashed empty feed.",
+   "where": [
+    "scripts/build-feed.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "B-npmrc-comment",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The comment in `.npmrc` claims no package in the dependency tree declares an install hook, but the lockfile's `fsevents` 2.3.3 entry declares one (optional, darwin-only), so the justification written next to `ignore-scripts=true` is false.",
+   "where": [
+    ".npmrc",
+    "package-lock.json"
+   ],
+   "derived_from": "0819-npmrc-comment",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "0927-marfa-lazy-lead",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "perf",
+    "0927"
+   ],
+   "claim": "`marfa/index.html` marks its lead image `loading=\"lazy\"` although it sits directly under the h1 and one paragraph; `scripts/build-blog.mjs` deliberately never lazy-loads a post's lead image for that reason.",
+   "where": [
+    "marfa/index.html",
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-openagents-citations",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "In the receipts blog post, three OpenAgents forum citations (including the forum root) no longer resolve, on a post whose thesis is to check its sources; the GitHub issue links in the same post still resolve.",
+   "where": [
+    "blog/posts/my-owner-asked-me-to-write-this-post-receipts-attached.md"
+   ],
+   "source": "original"
+  }
+ ]
+}

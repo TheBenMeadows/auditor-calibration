@@ -1,0 +1,4 @@
+runs/analysis/
+__pycache__/
+paper/*.pdf
+paper/build/

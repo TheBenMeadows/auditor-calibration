@@ -1,0 +1,395 @@
+[
+ {
+  "id": "C-speaking-cleanup-any",
+  "audit": "0927",
+  "tags": [
+   "source",
+   "0927",
+   "mut-C"
+  ],
+  "claim": "The cleanup loop in `scripts/build-speaking.mjs` deletes every directory under `speaking/` except `transcripts/`, whether or not it holds an `index.html`, so a folder of audio or images placed there vanishes on the next build.",
+  "where": [
+   "scripts/build-speaking.mjs"
+  ],
+  "derived_from": "0927-speaking-cleanup",
+  "why_false": "scripts/build-speaking.mjs@96d7b9d:223 requires `existsSync(join(OUT, dir.name, \"index.html\"))` before the `rmSync` at :224, so a directory with no index.html is left alone.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "C-eth-duplicate-card",
+  "audit": "0819",
+  "tags": [
+   "content",
+   "0819",
+   "mut-C"
+  ],
+  "claim": "`mirrors/index.html` renders two name cards with the identical `.eth.limo` href, while the surrounding prose describes four names and the grid shows five.",
+  "where": [
+   "mirrors/index.html"
+  ],
+  "derived_from": "0819-sol-duplicate-card",
+  "why_false": "mirrors/index.html@7f50013:159 is the only `href=\"https://thebenmeadows.eth.limo/\"` in the file. The duplicated href is `https://thebenmeadows.sol.site/` at :167 and :175.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "B-search-focus-trap",
+  "audit": "0927",
+  "tags": [
+   "a11y",
+   "0927",
+   "mut-B"
+  ],
+  "claim": "The search overlay declares `aria-modal=\"true\"` but `search.js` has no Tab trap (it tracks `lastFocus` only), so keyboard focus escapes the dialog on the second Tab press.",
+  "where": [
+   "search.js",
+   "index.html"
+  ],
+  "derived_from": "0819-search-focus-trap",
+  "why_false": "Fixed before 0927. search.js@96d7b9d:291-304 adds a keydown handler: `if (e.key !== 'Tab' || wrap.hidden) return;` \u2026 `e.preventDefault(); last.focus();` on Shift+Tab from the first element and `first.focus();` on Tab from the last.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "B-manifest-guard-gap",
+  "audit": "0927",
+  "tags": [
+   "source",
+   "0927",
+   "mut-B"
+  ],
+  "claim": "The `_headers` guard in `scripts/build-manifest.mjs` catches duplicate paths but would not catch an indented header line that carries a second `name: value` pair glued onto it, so a header-merging regression passes the build.",
+  "where": [
+   "scripts/build-manifest.mjs",
+   "_headers"
+  ],
+  "derived_from": "0819-manifest-guard-gap",
+  "why_false": "Fixed before 0927. scripts/build-manifest.mjs@96d7b9d:150-167 adds the check; hunk: `+        const glued = [];` \u2026 `+            const m = line.match(/^  [A-Za-z][A-Za-z0-9-]*: .*?\\s([A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*): \\S/);` \u2026 `+            throw new Error(\u2026 has header lines carrying a second \"Name:\" token \u2026)`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "C-guard-no-dupes",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-C"
+  ],
+  "claim": "The `_headers` guard in `scripts/build-manifest.mjs` catches neither duplicate paths nor an indented header line carrying a second `name: value` pair, so both regressions pass the build.",
+  "where": [
+   "scripts/build-manifest.mjs",
+   "_headers"
+  ],
+  "derived_from": "0819-manifest-guard-gap",
+  "why_false": "scripts/build-manifest.mjs@7f50013:137-148 counts every line starting with `/` and throws `declares these paths more than once, so Cloudflare Pages will drop all but the last block` on a repeat. Only the glued-line case is uncaught.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "C-readme-never-run",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-C"
+  ],
+  "claim": "`package.json` defines a `check:readme` script that nothing runs, and the `build` script never invokes `scripts/sync-readme-mirrors.mjs` in any mode, so `readme.md` drifts from `mirrors.json` until someone regenerates it by hand.",
+  "where": [
+   "package.json",
+   "scripts/sync-readme-mirrors.mjs"
+  ],
+  "derived_from": "0819-check-readme-unrun",
+  "why_false": "package.json@7f50013:12 `build` ends `&& node scripts/build-feed.mjs && node scripts/sync-readme-mirrors.mjs`, which rewrites the readme block from mirrors.json on every build; only the `--check` variant is unrun.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "C-onion-search-count",
+  "audit": "0819",
+  "tags": [
+   "security",
+   "0819",
+   "mut-C"
+  ],
+  "claim": "In `_headers`, all 21 page blocks from `/` down to `/search/` have their `Onion-Location` value glued onto the end of the `Cache-Control` line (no line break between them), so no `Onion-Location` header is emitted for any page and Tor Browser is never offered the onion mirror.",
+  "where": [
+   "_headers"
+  ],
+  "derived_from": "0819-headers-onion-glued",
+  "why_false": "_headers@7f50013 has 20 glued blocks, `/` through `/experiments/dls/` (:91-153). `/search/` (:155-156) carries only `Cache-Control: public, max-age=0, must-revalidate` and no Onion-Location at all.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "D-ai-wins-http",
+  "audit": "0927",
+  "tags": [
+   "source",
+   "0927",
+   "mut-D"
+  ],
+  "claim": "`scripts/check-ai-wins.mjs` accepts any link whose `url` starts with `http`, so a plain `http://` link in `ai/wins.json` passes the guard and ships on /ai/.",
+  "where": [
+   "scripts/check-ai-wins.mjs",
+   "ai/wins.json"
+  ],
+  "derived_from": null,
+  "why_false": "scripts/check-ai-wins.mjs@96d7b9d:80 `!link.url.startsWith(\"https://\")` fails with `links[j].url must be an absolute https URL`; quotes get the same test at :105.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "B-poap-vault-tabs",
+  "audit": "0927",
+  "tags": [
+   "a11y",
+   "0927",
+   "mut-B"
+  ],
+  "claim": "The collection filters on `/experiments/poap-vault/` use `role=\"tab\"` with no corresponding tabpanel and no arrow-key handling, so the tab semantics are unbuilt; they behave as filter buttons.",
+  "where": [
+   "experiments/poap-vault/index.html",
+   "experiments/poap-vault/app.js"
+  ],
+  "derived_from": "0819-poap-vault-tabs",
+  "why_false": "Fixed before 0927. experiments/poap-vault/index.html@96d7b9d:63 `<div class=\"controls\" id=\"colls\" role=\"group\" aria-label=\"Collection\">` with `aria-pressed` buttons and no role=\"tab\"; app.js:155 hunk `-            c.setAttribute('aria-selected', \u2026)` / `+            c.setAttribute('aria-pressed', \u2026)`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "D-manifest-build-clock",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-D"
+  ],
+  "claim": "`scripts/build-manifest.mjs` records the build time in the manifest, so Cloudflare and Netlify produce different `manifest.json` bytes for the same commit and the release signature verifies on only one of them.",
+  "where": [
+   "scripts/build-manifest.mjs"
+  ],
+  "derived_from": null,
+  "why_false": "scripts/build-manifest.mjs@7f50013:100-111: the manifest keys are site, commit, commitDate (git committer date under TZ=UTC, :106), fileCount, treeSha256, mirrors and files. No build-clock value; :14-16 says the build clock is never recorded.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "D-readme-raw-slug",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-D"
+  ],
+  "claim": "`scripts/sync-readme-mirrors.mjs` falls back to printing the raw `kind/network` slug for any pair missing from `LABELS`, so a newly added network ships to `readme.md` as an unlabelled row.",
+  "where": [
+   "scripts/sync-readme-mirrors.mjs",
+   "mirrors.json"
+  ],
+  "derived_from": null,
+  "why_false": "scripts/sync-readme-mirrors.mjs@7f50013:62 `if (!found) throw new Error(`sync-readme-mirrors: no label for \"${key}\" \u2014 add one to LABELS`);`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "A-charset-home",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-A"
+  ],
+  "claim": "`index.html` places its `<meta charset>` beyond the first 1024 bytes of the document because a long comment sits above `<html>`, outside the window browsers use for encoding sniffing.",
+  "where": [
+   "index.html"
+  ],
+  "derived_from": "0819-charset-late",
+  "why_false": "index.html@7f50013:1-4 is `<!doctype html>`, `<html lang=\"en\">`, `<head>`, `<meta charset=\"UTF-8\" />`; the tag starts at byte 52. Its comments (lines 37, 58, 75, 96) all come after it. Only essentialism/index.html (byte 1100) has the late charset.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "D-ai-links-ci-403",
+  "audit": "0927",
+  "tags": [
+   "source",
+   "0927",
+   "mut-D"
+  ],
+  "claim": "`scripts/check-ai-links.mjs --ci` exits 1 on any non-2xx response, so a 403 or 429 from a venue that blocks scripts fails the run as if the entry were dead.",
+  "where": [
+   "scripts/check-ai-links.mjs"
+  ],
+  "derived_from": null,
+  "why_false": "scripts/check-ai-links.mjs@96d7b9d:56 counts only `status === 404 || status === 410` as gone; every other status increments `unknown` (:59-61), and :67 is `if (CI && gone > 0) process.exit(1);`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "D-version-css-silent",
+  "audit": "0819",
+  "tags": [
+   "source",
+   "0819",
+   "mut-D"
+  ],
+  "claim": "`scripts/version-css.mjs` renames `output.css` to its hashed name and exits 0 even when no page references `/output.css`, leaving every page pointing at a stylesheet that no longer exists in `dist/`.",
+  "where": [
+   "scripts/version-css.mjs"
+  ],
+  "derived_from": null,
+  "why_false": "scripts/version-css.mjs@7f50013:37-39 `if (rewritten === 0) { throw new Error(\"version-css: no page references /output.css \u2014 the link pattern drifted, fix this script\"); }`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "B-build-feed-empty",
+  "audit": "0927",
+  "tags": [
+   "source",
+   "0927",
+   "mut-B"
+  ],
+  "claim": "`scripts/build-feed.mjs` catches a git failure, warns, and still writes a valid-looking empty feed with a hardcoded `2026-01-01` timestamp instead of throwing, so a broken build produces a signed, manifest-hashed empty feed.",
+  "where": [
+   "scripts/build-feed.mjs"
+  ],
+  "derived_from": "0819-build-feed-empty",
+  "why_false": "Fixed before 0927. scripts/build-feed.mjs@96d7b9d:32-36 calls git with no try/catch and `throw new Error(\"build-feed: git log returned nothing; refusing to write an empty feed\")`. Hunk removes `-    console.warn(\"build-feed: git log unavailable, writing empty feed\");` and `-const feedUpdated = lines.length ? \u2026 : \"2026-01-01T00:00:00Z\";`.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "A-pre-light-essentialism",
+  "audit": "0819",
+  "tags": [
+   "a11y",
+   "0819",
+   "mut-A"
+  ],
+  "claim": "`art/essentialism/index.html` renders the on-chain generator listing in a `bg-zinc-900` `<pre>` block that never receives a light-theme override, so in light mode its text is about 2.29:1 against its background.",
+  "where": [
+   "art/essentialism/index.html",
+   "src/input.css"
+  ],
+  "derived_from": "0819-mirrors-pre-light",
+  "why_false": "art/essentialism/index.html@7f50013:235 is `<pre class=\"mt-6 max-h-96 overflow-auto hairline-card p-6 text-xs leading-relaxed\">`, with no bg-zinc-900. `git grep bg-zinc-900 7f50013 -- '*.html'` matches only mirrors/index.html.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "A-ai-escaping",
+  "audit": "0927",
+  "tags": [
+   "security",
+   "0927",
+   "mut-A"
+  ],
+  "claim": "`scripts/build-ai.mjs` interpolates each card link's `url` and each quote's `url` raw into `href` attributes, and nothing checks the scheme, so a `javascript:` URL added to `ai/wins.json` ships as a live link on /ai/.",
+  "where": [
+   "scripts/build-ai.mjs",
+   "scripts/check-ai-wins.mjs",
+   "ai/wins.json"
+  ],
+  "derived_from": "0927-speaking-escaping",
+  "why_false": "scripts/build-ai.mjs@96d7b9d:40, :48 and :70 wrap every href in `esc(...)`; scripts/check-ai-wins.mjs:80 and :105 fail unless `url.startsWith(\"https://\")`, and package.json `build` runs check-ai-wins.mjs before build-ai.mjs.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "B-blog-raw-html",
+  "audit": "0927",
+  "tags": [
+   "security",
+   "0927",
+   "mut-B"
+  ],
+  "claim": "`scripts/build-blog.mjs` defines a marked `RENDERER` with no `html` method and merges it onto marked's defaults, whose `html` renderer is a passthrough, so raw `<script>` or `<img onerror=\u2026>` written into `blog/posts/*.md` reaches the generated page unescaped. The source comment near the renderer claims stray markup is escaped.",
+  "where": [
+   "scripts/build-blog.mjs"
+  ],
+  "derived_from": "0819-blog-raw-html",
+  "why_false": "Fixed before 0927. scripts/build-blog.mjs@96d7b9d:311-312 is inside RENDERER: hunk `+    html({ text }) {` / `+        return esc(text);` / `+    },`, so raw markup in a post is entity-escaped.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "A-dup-font-porcine",
+  "audit": "0819",
+  "tags": [
+   "perf",
+   "0819",
+   "mut-A"
+  ],
+  "claim": "`experiments/porcine/fonts/inter-var-latin.woff2` is byte-identical to `fonts/publicsans-v1.woff2` but served at a different URL, so it cannot share the cache entry and additionally inherits the default `max-age=0`.",
+  "where": [
+   "experiments/porcine/fonts/inter-var-latin.woff2",
+   "fonts/publicsans-v1.woff2",
+   "_headers"
+  ],
+  "derived_from": "0819-duplicate-font",
+  "why_false": "At 7f50013 the blobs differ (git ls-tree: inter-var-latin.woff2 = 91dc3e85\u2026, publicsans-v1.woff2 = 89b2109b\u2026), and _headers:159-160 caches `/experiments/porcine/fonts/*` at `max-age=31536000, immutable`. The file that duplicates 89b2109b is experiments/poap-vault/publicsans.woff2.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ },
+ {
+  "id": "A-heading-projects",
+  "audit": "0819",
+  "tags": [
+   "a11y",
+   "0819",
+   "mut-A"
+  ],
+  "claim": "The `/projects/` page's heading outline skips a level: its card titles are `<h3>` directly under the page `<h1>`, where `/experiments/` uses `<h2>` for the same role.",
+  "where": [
+   "projects/index.html",
+   "experiments/index.html"
+  ],
+  "derived_from": "0819-home-heading-outline",
+  "why_false": "projects/index.html@7f50013:60 is the h1 and every card title (:74, :88, :102, :115, :128, :142) is `<h2 class=\"card-title \u2026\">`, so the outline is h1 then h2 x6. Only index.html (h1, h3, h3) skips a level.",
+  "repo": "TheBenMeadows/tbm",
+  "ref": "7f50013b094028da0b9630b5972971ecd16e3d68",
+  "author_label": 0,
+  "label": 0
+ }
+]

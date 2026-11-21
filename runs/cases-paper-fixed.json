@@ -1,0 +1,2227 @@
+{
+ "_comment": "Paper case set. label 1 = real finding, 0 = refuted. source = original|council|mutated|fresh. Cases without repo/ref inherit repo and refs[audit]. Split 2026-10-12: every case except source=fresh (fresh claims run as their own variant once Ben has ruled them).",
+ "repo": "TheBenMeadows/tbm",
+ "refs": {
+  "0819": {
+   "sha": "7f50013b094028da0b9630b5972971ecd16e3d68",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-08-19.md"
+  },
+  "0927": {
+   "sha": "96d7b9d",
+   "audit": "~/Projects/claude-ai/tbm-audit-2026-09-27.md"
+  },
+  "1007": {
+   "sha": "ca0b665264e45e7c3e76b04f90326e48c5336fdd",
+   "audit": "fresh five-lens audit 2026-10-07"
+  }
+ },
+ "cases": [
+  {
+   "id": "0819-headers-onion-glued",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "security",
+    "0819"
+   ],
+   "claim": "In `_headers`, 20 path blocks have their `Onion-Location` value glued onto the end of the `Cache-Control` line (no line break between them), so no `Onion-Location` header is emitted for any path and Tor Browser is never offered the onion mirror.",
+   "where": [
+    "_headers"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-manifest-guard-gap",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "The `_headers` guard in `scripts/build-manifest.mjs` catches duplicate paths but would not catch an indented header line that carries a second `name: value` pair glued onto it, so a header-merging regression passes the build.",
+   "where": [
+    "scripts/build-manifest.mjs",
+    "_headers"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-blog-raw-html",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "security",
+    "0819"
+   ],
+   "claim": "`scripts/build-blog.mjs` defines a marked `RENDERER` with no `html` method and merges it onto marked's defaults, whose `html` renderer is a passthrough, so raw `<script>` or `<img onerror=\u2026>` written into `blog/posts/*.md` reaches the generated page unescaped. The source comment near the renderer claims stray markup is escaped.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-commit-trailers",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "governance",
+    "0819"
+   ],
+   "claim": "Commits on `main` from `4b354e6` (2026-07-19) through `254484d` (2026-08-03) carry a `Co-Authored-By: Claude \u2026` trailer, and many of them also carry a `Claude-Session:` URL in the message; commits after `254484d` carry neither.",
+   "where": [
+    "git history of main (list_commits / get_commit)"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-headers-cache-coverage",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819"
+   ],
+   "claim": "`_headers` cache rules apply only to the paths they name, so `/blog/media/**` images, `/art/essentialism/*`, every `/experiments/*/app.js` and `style.css`, `/projects/poap-saver/app.js` and the whole `/experiments/poap-vault/img/` set (over 700 WebP files) fall to the Pages default `max-age=0, must-revalidate` and are not browser-cacheable.",
+   "where": [
+    "_headers",
+    "blog/media/",
+    "experiments/",
+    "projects/poap-saver/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-dls-jpegs",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819"
+   ],
+   "claim": "`/experiments/dls/` ships two unoptimized JPEGs, `HEw3HB0WoAAHoBW.jpeg` (about 706 KB) and `rzVCLxC8.jpg` (about 345 KB), that together are over 95% of the page's weight; neither `<img>` carries `width`/`height` attributes and neither is lazy-loaded.",
+   "where": [
+    "experiments/dls/index.html",
+    "experiments/dls/HEw3HB0WoAAHoBW.jpeg",
+    "experiments/dls/rzVCLxC8.jpg"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-essentialism-png-aspect",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819"
+   ],
+   "claim": "`art/essentialism/index.html` declares `essentialism-2022.png` with `width=\"1200\" height=\"900\"` while the image file itself is square (1200\u00d71200), so the browser reserves a 4:3 box and shifts layout on decode.",
+   "where": [
+    "art/essentialism/index.html",
+    "art/essentialism/essentialism-2022.png"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-build-feed-empty",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`scripts/build-feed.mjs` catches a git failure, warns, and still writes a valid-looking empty feed with a hardcoded `2026-01-01` timestamp instead of throwing, so a broken build produces a signed, manifest-hashed empty feed.",
+   "where": [
+    "scripts/build-feed.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-sign-release-exit",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`scripts/sign-release.sh` folds stderr into stdout, pipes the publish step through `tail`, and never inspects the exit status, so if every relay rejects the release event the script prints the rejections and exits 0.",
+   "where": [
+    "scripts/sign-release.sh"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-build-stamp-skips",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`scripts/build-stamp.mjs` skips a missing page with a warning and still exits 0, and nothing compares the number of pages stamped against the expected count.",
+   "where": [
+    "scripts/build-stamp.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-frontmatter-unescaped",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "In `scripts/build-blog.mjs`, several front-matter fields (including `tags`, which is unconstrained) reach the page unescaped, and the `updated` field gets none of the `^\\d{4}-\\d{2}-\\d{2}$` validation that `date` already has, landing raw in both the page and the Atom feed.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-check-readme-unrun",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`package.json` defines a `check:readme` script that nothing runs; the build runs the rewriting variant instead, and `readme.md` is not part of the published artifact, so the drift guard on the readme can never fail anything.",
+   "where": [
+    "package.json",
+    "scripts/sync-readme-mirrors.mjs",
+    ".github/workflows/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-npmrc-comment",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "The comment in `.npmrc` claims no package in the dependency tree declares an install hook, but the lockfile's `fsevents` 2.3.3 entry declares one (optional, darwin-only), so the justification written next to `ignore-scripts=true` is false.",
+   "where": [
+    ".npmrc",
+    "package-lock.json"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-pretext-unused",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`@chenglou/pretext` is declared in `package.json` but nothing in `scripts/` imports it, and `marked` is pinned two major versions behind the current release.",
+   "where": [
+    "package.json",
+    "scripts/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-duplicate-font",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819"
+   ],
+   "claim": "`experiments/poap-vault/publicsans.woff2` is byte-identical to `fonts/publicsans-v1.woff2` but served at a different URL, so it cannot share the cache entry and additionally inherits the default `max-age=0`.",
+   "where": [
+    "experiments/poap-vault/publicsans.woff2",
+    "fonts/publicsans-v1.woff2",
+    "_headers"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-redirects-count-comment",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "The comment in `_redirects` says the catch-all rule covers 763 files, but the number of files it actually covers is different, so the figure in the comment is stale.",
+   "where": [
+    "_redirects"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-blog-alt-empty",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "`blog/posts/art-tech-highlights.md` and `blog/posts/podcasts-public-speaking.md` each contain eleven bare `![](\u2026)` images with no alt text, and both lack an `image_alt` front-matter field for their lead image, so about 25 content images ship with `alt=\"\"`.",
+   "where": [
+    "blog/posts/art-tech-highlights.md",
+    "blog/posts/podcasts-public-speaking.md",
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-pendulum-names",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "`/experiments/pendulum/` has 11 buttons, 10 range sliders and a select with no accessible names (the visible labels are unassociated sibling spans), and its CSS sets `input[type=range]:focus { outline: none; }` with no replacement focus style.",
+   "where": [
+    "experiments/pendulum/index.html",
+    "experiments/pendulum/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-dark-contrast",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "In the dark theme, `text-neutral-600` (`#525252`) on black is about 2.69:1 and is used for links in the footer build line injected by `scripts/build-stamp.mjs` on most pages, and `--ink-soft: #737373` is about 4.43:1 and is used for running heads, section labels, post meta and table headers, so dark mode fails WCAG AA for text site-wide.",
+   "where": [
+    "src/input.css",
+    "scripts/build-stamp.mjs",
+    "index.html",
+    "tailwind.config.js"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-mirrors-pre-light",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "`mirrors/index.html` has a `bg-zinc-900` `<pre>` block that never receives a light-theme override, so in light mode its text is about 2.29:1 against its background.",
+   "where": [
+    "mirrors/index.html",
+    "src/input.css"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-search-focus-trap",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "The search overlay declares `aria-modal=\"true\"` but `search.js` has no Tab trap (it tracks `lastFocus` only), so keyboard focus escapes the dialog on the second Tab press.",
+   "where": [
+    "search.js",
+    "index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-content-language-meta",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "Most pages carry `<meta http-equiv=\"content-language\">`, which is an HTML5 validator error; `<html lang=\"en\">` already covers it.",
+   "where": [
+    "index.html",
+    "tech/index.html",
+    "mirrors/index.html",
+    "profiles/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-home-heading-outline",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "The home page's heading outline is `h1, h3, h3`: its two `.section-label` headings are `<h3>` where every other page uses `<h2>` for the same role.",
+   "where": [
+    "index.html",
+    "experiments/index.html",
+    "projects/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-reduced-motion",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "There is no `prefers-reduced-motion` guard anywhere except one `scroll-behavior` rule: `/experiments/porcine/` runs three infinite CSS animations plus a 1 Hz blinker and `/experiments/etherhoo/` mutates two tables on 0.8 s and 3.5 s timers forever, with no pause control.",
+   "where": [
+    "experiments/porcine/",
+    "experiments/etherhoo/",
+    "src/input.css",
+    "scripts/experiments-input.css"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-theme-toggle-name",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "The theme toggle button has no accessible name when JavaScript is disabled: its visible label is set by CSS `::before` content, which does not enter accessible-name computation.",
+   "where": [
+    "index.html",
+    "theme.js",
+    "src/input.css"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-porcine-h1-triple",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "The `<h1>` on `/experiments/porcine/` uses glitch pseudo-elements whose CSS `content: attr(data-text)` is folded into the accessible name, so a screen reader announces the title three times.",
+   "where": [
+    "experiments/porcine/index.html",
+    "experiments/porcine/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-empty-md-link",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "`blog/posts/art-tech-highlights.md` contains a stray empty markdown link `[]()` that renders as an anchor with no text, producing a nameless tab stop.",
+   "where": [
+    "blog/posts/art-tech-highlights.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-poap-vault-tabs",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819"
+   ],
+   "claim": "The collection filters on `/experiments/poap-vault/` use `role=\"tab\"` with no corresponding tabpanel and no arrow-key handling, so the tab semantics are unbuilt; they behave as filter buttons.",
+   "where": [
+    "experiments/poap-vault/index.html",
+    "experiments/poap-vault/app.js"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-charset-late",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819"
+   ],
+   "claim": "`essentialism/index.html` places its `<meta charset>` beyond the first 1024 bytes of the document because a long comment sits above `<html>`, outside the window browsers use for encoding sniffing.",
+   "where": [
+    "essentialism/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-youtube-relme",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "The `rel=\"me\"` link to YouTube on the home page and on `/profiles/` points at `youtube.com/thebenmeadows`, which returns 404; the `@thebenmeadows` handle form of the URL is the one that resolves.",
+   "where": [
+    "index.html",
+    "profiles/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-foundation-dead",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "Three deep links on the site cite foundation.app pages (North of Eden, ABC Art World sales, Based Blue Death), and foundation.app no longer serves those pages, so the sales claims they support now cite dead pages.",
+   "where": [
+    "art/index.html",
+    "blog/posts/",
+    "index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-openagents-citations",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "In the receipts blog post, three OpenAgents forum citations (including the forum root) no longer resolve, on a post whose thesis is to check its sources; the GitHub issue links in the same post still resolve.",
+   "where": [
+    "blog/posts/my-owner-asked-me-to-write-this-post-receipts-attached.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-inpeak-links",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "Six links to inpeak.xyz on the podcasts post are unrecoverable: the domain now forwards to an unrelated company and strips the path.",
+   "where": [
+    "blog/posts/podcasts-public-speaking.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-tech-only-image",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819"
+   ],
+   "claim": "`/tech/` states that the only image on the site is the profile photo, which is contradicted by another image on the same page and by the dls JPEGs, the essentialism PNG, hundreds of poap-vault WebPs and every blog card image.",
+   "where": [
+    "tech/index.html",
+    "experiments/dls/",
+    "art/essentialism/",
+    "experiments/poap-vault/img/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-sol-duplicate-card",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819"
+   ],
+   "claim": "`mirrors/index.html` renders two name cards with the identical `.sol` href, while the surrounding prose describes four names and the grid shows five.",
+   "where": [
+    "mirrors/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-tezos-editions",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "`/art/` and `/art/essentialism/` say \"44 editions on Tezos\"; on-chain the token's edition size is 44 but only 8 are minted, so the wording conflates run size with minted count.",
+   "where": [
+    "art/index.html",
+    "art/essentialism/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-porcine-credit",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "On `/experiments/porcine/` the visible credit reads \"James Cramer (@harttotelll)\" but the link's href is the handle `@hardtotelll`, and that account's display name is James Kramer, so both the surname and the handle in the visible text are wrong.",
+   "where": [
+    "experiments/porcine/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-sitemap-lastmod",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819"
+   ],
+   "claim": "`sitemap.xml` has `lastmod` values that are stale against git history on most of its 23 URLs, omits `/search/` and `/essentialism/`, and still carries an `xml-sitemaps.com` generator comment, making it the one artifact in the repo no build script produces.",
+   "where": [
+    "sitemap.xml",
+    "scripts/",
+    "git history of main"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-highlights-prose",
+   "label": 1,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819"
+   ],
+   "claim": "`blog/posts/art-tech-highlights.md` has a date written as 4/18/2023 whose machine-readable form decodes to 2024-04-16, plus a broken list rendering and missing quotation marks in its prose.",
+   "where": [
+    "blog/posts/art-tech-highlights.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-speaking-no-way-in",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "content",
+    "0927"
+   ],
+   "claim": "No page links to `/speaking/`: the home page, the blog index, the Podcasts & Public Speaking post, `/projects/` and `/profiles/` carry no `href=\"/speaking/\"`, and `sitemap.xml` has no `/speaking` entry, while the `/speaking/` index links back to the podcasts post.",
+   "where": [
+    "index.html",
+    "blog/posts/podcasts-public-speaking.md",
+    "projects/index.html",
+    "profiles/index.html",
+    "sitemap.xml",
+    "scripts/build-speaking.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-squint-signed-claim",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "content",
+    "0927",
+    "external"
+   ],
+   "claim": "The Squint entry in `ai/wins.json` says the release is \"a signed disk image\" and links Squint v0.6.0, but that release's notes say it is not notarized and the DMG is ad-hoc signed with no Team ID.",
+   "where": [
+    "ai/wins.json",
+    "mdws-org/squint releases (v0.6.0)"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-headers-new-sections",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927"
+   ],
+   "claim": "`_headers` has no entries for `/ai/`, `/marfa/` or `/speaking/*`, so those pages send no `Onion-Location` while every older section does, and `/marfa/title-card.pdf`, `/marfa/plastic-cactus-announcement.webp` and `art/essentialism/syntax/*.js` get no cache rule while comparable media get `max-age=604800`.",
+   "where": [
+    "_headers",
+    "marfa/",
+    "art/essentialism/syntax/"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-bitly-relative",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "content",
+    "0927"
+   ],
+   "claim": "`blog/posts/podcasts-public-speaking.md` writes `[Presentation & Resources](bit.ly/MayCCA)` with no scheme, so the rendered href is relative and resolves under the post's own path, where it 404s.",
+   "where": [
+    "blog/posts/podcasts-public-speaking.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-empty-link-2025",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927"
+   ],
+   "claim": "`blog/posts/art-tech-highlights-2025.md` contains a stray `[](https://x.com/TheBenMeadows/status/1718291806855860616)` after a `[3](\u2026)` link, which renders as an anchor with no text or label.",
+   "where": [
+    "blog/posts/art-tech-highlights-2025.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-syn-operator-contrast",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927"
+   ],
+   "claim": "In the light theme on `/art/essentialism/`, the `--syn-operator` colour `#6f7883` sits on a white background (the card is transparent) at 12 px, which is about 4.48:1, just under the 4.5:1 AA threshold.",
+   "where": [
+    "art/essentialism/index.html",
+    "art/essentialism/syntax/",
+    "src/input.css"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-build-stamp-list",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`scripts/build-stamp.mjs` lists pages by hand and its \"every page accounted for\" check counts only that list, which omits `/marfa/`, `/speaking/` and the transcript pages, so those ship with no build stamp while `/ai/` and the blog are stamped.",
+   "where": [
+    "scripts/build-stamp.mjs",
+    "scripts/build-speaking.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-marfa-lazy-lead",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "perf",
+    "0927"
+   ],
+   "claim": "`marfa/index.html` marks its lead image `loading=\"lazy\"` although it sits directly under the h1 and one paragraph; `scripts/build-blog.mjs` deliberately never lazy-loads a post's lead image for that reason.",
+   "where": [
+    "marfa/index.html",
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-speaking-escaping",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927"
+   ],
+   "claim": "`scripts/build-speaking.mjs` interpolates `audio_cid` and `registry.root` raw into `href` attributes and text, and the filename-derived slug raw into the index `href` and the output path (a transcript file named `...md` would write over the repository's root `index.html`); `origin` is escaped but its scheme is not checked, and the marked configuration passes `javascript:` links through.",
+   "where": [
+    "scripts/build-speaking.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-speaking-cleanup",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "The cleanup loop in `scripts/build-speaking.mjs` deletes any directory under `speaking/` that contains an `index.html` (except `transcripts/`), so a hand-made page placed there vanishes on the next build.",
+   "where": [
+    "scripts/build-speaking.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-ai-wins-dates",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`scripts/check-ai-wins.mjs` validates dates with `Date.parse`, which rolls impossible dates over (`2026-02-30` becomes March 2), so an impossible date passes the guard and the card prints it as written.",
+   "where": [
+    "scripts/check-ai-wins.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-mirrors-check-ports",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`scripts/check-mirrors-page.mjs` strips the port and username from `ssh://`-style addresses before matching, and matches by substring, so changing the SSH port in `mirrors.json` while the page still prints `-p 2222` passes the check.",
+   "where": [
+    "scripts/check-mirrors-page.mjs",
+    "mirrors.json",
+    "mirrors/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-tailwind-speaking",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`tailwind.config.js` scans `ai/` and `marfa/` for class names but not `speaking/**`, so a utility class used only on a transcript page would be purged from the stylesheet and ship unstyled.",
+   "where": [
+    "tailwind.config.js",
+    "scripts/build-speaking.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-build-order-related",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`package.json`'s `build` runs `build-blog` before `build-speaking`, and `scripts/build-blog.mjs` resolves a post's `related:` pages by reading generated HTML, so a post with `related: [/speaking/]` fails a clean CI build.",
+   "where": [
+    "package.json",
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-dead-links-2025",
+   "label": 1,
+   "audit": "0927",
+   "tags": [
+    "content",
+    "0927",
+    "external"
+   ],
+   "claim": "On the 2025 highlights post, the link to `opensea.io/TheBenMeadows/collected` returns 404 and `abcartworld.com` no longer resolves in DNS.",
+   "where": [
+    "blog/posts/art-tech-highlights-2025.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-jsonld-csp",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927"
+   ],
+   "claim": "`index.html` adds an inline `<script type=\"application/ld+json\">` block, and the CSP in `_headers` uses `script-src 'self'` with no `'unsafe-inline'` and no hash for that block, so browsers refuse it and the Person schema never reaches a crawler, with no visible symptom.",
+   "where": [
+    "index.html",
+    "_headers"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-unlisted-feed-leak",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "The new `unlisted` post flag is filtered by the blog index, the blog feed and the search index, but `scripts/build-feed.mjs` is unchanged and reads the shared page list, so the unlisted 2025 highlights post enters the site release feed at `/feed.xml` and `/rss.xml` and reaches subscribers.",
+   "where": [
+    "scripts/build-feed.mjs",
+    "scripts/build-blog.mjs",
+    "scripts/build-search-index.mjs",
+    "blog/posts/art-tech-highlights-2025.md"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0927-indent-outside-pre",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927"
+   ],
+   "claim": "`indentOutsidePre` in `scripts/build-blog.mjs` evaluates `inPre` before updating it for the current line, so the line opening `<pre>` is indented and the line closing `</pre>` is not, leaving the outer tags of every multi-line code block misaligned in the HTML source.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-sitemap-missing-blog",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819"
+   ],
+   "claim": "`sitemap.xml` is missing seven pages that exist on the site, all of them blog post routes, so those posts are undiscoverable through the sitemap.",
+   "where": [
+    "sitemap.xml",
+    "blog/posts/",
+    "scripts/build-blog.mjs"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "0819-infra-los-angeles",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "external"
+   ],
+   "claim": "`/infra/` says the anycast service is \"served from Frankfurt and Los Angeles at once\", but the page's own location list names Fremont, Frankfurt, Kansas City and Manchester; Los Angeles appears nowhere else, so one of the two statements is wrong.",
+   "where": [
+    "infra/index.html"
+   ],
+   "source": "original"
+  },
+  {
+   "id": "tbm-96d7b9d-jsonld-csp",
+   "label": 0,
+   "repo": "TheBenMeadows/tbm",
+   "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+   "audit": "council",
+   "tags": [
+    "security",
+    "council",
+    "tbm"
+   ],
+   "claim": "The new inline JSON-LD is probably blocked by the CSP, and fails silently. `index.html:30` adds `<script type=\"application/ld+json\">`; CSP `script-src` applies to inline script elements including non-executable types, so unless `_headers` carries `'unsafe-inline'` or a hash for this block, Chrome and Firefox refuse it and the Person schema never reaches a crawler, with no visible symptom and no build failure.",
+   "where": [
+    "index.html",
+    "_headers"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "tbm-96d7b9d-unlisted-feed-leak",
+   "label": 0,
+   "repo": "TheBenMeadows/tbm",
+   "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+   "audit": "council",
+   "tags": [
+    "source",
+    "content",
+    "council",
+    "tbm"
+   ],
+   "claim": "`unlisted` was wired into three consumers and probably not the fourth. `build-blog.mjs` filters `listed` for the index and blog feed, and `build-search-index.mjs` filters it out of search, but `scripts/build-feed.mjs` is unchanged and, if it reads `pages.json`, the superseded post enters the site release feed and reaches every subscriber at `/feed.xml`, exactly the exposure `unlisted` exists to prevent.",
+   "where": [
+    "scripts/build-feed.mjs",
+    "scripts/build-blog.mjs",
+    "scripts/build-search-index.mjs"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "tbm-96d7b9d-pre-indent",
+   "label": 0,
+   "repo": "TheBenMeadows/tbm",
+   "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "tbm"
+   ],
+   "claim": "`indentOutsidePre()` in `scripts/build-blog.mjs` evaluates `inPre` before updating state for the current line. On the line opening `<pre>`, `inPre` is false, so the line gets indented by 12 spaces; on the closing `</pre>` line, `inPre` is true, so it receives no indentation. Multi-line `<pre>` blocks therefore output misaligned outer tags in the HTML source.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "tbm-96d7b9d-localecompare-lang",
+   "label": 0,
+   "repo": "TheBenMeadows/tbm",
+   "ref": "96d7b9d6b5f8b14dab6a342a83b3c3c4f0b6e324",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "tbm"
+   ],
+   "claim": "Tie-breaking in `scripts/build-speaking.mjs` and `scripts/build-ai.mjs` uses `localeCompare()` without an explicit locale parameter (e.g. `a.slug.localeCompare(b.slug)`), so the generated pages can re-order across CI runners or mirrors operating under differing system locales (`LANG`).",
+   "where": [
+    "scripts/build-speaking.mjs",
+    "scripts/build-ai.mjs"
+   ],
+   "source_model": "gemini-agyx; deepseek-flash; gpt-6-luna",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-b8635c1-stale-txshape",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "b8635c129cf75198b569d09f606cdc4f0e8758f1",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Stale state leak on navigation in `src/pages/Jar.tsx`: `details` state is never cleared when `refFilter` changes or is removed (`if (!payments || !refFilter) return`). Navigating from a specific receipt (`?ref=TAB-123`) back to the main jar view leaves stale transaction details in memory, and any matching transaction signatures in the full jar list will erroneously render `<TxShape>` elements despite no reference filter being active.",
+   "where": [
+    "src/pages/Jar.tsx",
+    "src/components/TxShape.tsx"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-open-amount-override",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "security",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Open-amount URL link param overwrite allows spoofing/underpayment. When a merchant chooses \"Whatever the payer chooses, for a tip jar\" in `Create.tsx`, the amount is ignored, but a crafted payload with `a` (or `u`) set alongside an open tip-jar request keeps `a` through `normalizeRequest`, and `Pay.tsx` checks `if (request.amount)` before `isOpenAmount(request)`. A link with `a: \"0.000001\"` therefore tricks a payer viewing an open tip jar into paying 0.000001 COOK instead of their intended tip: the UI's input expectation and the signed amount disagree.",
+   "where": [
+    "src/pages/Pay.tsx",
+    "src/lib/request.ts",
+    "src/pages/Create.tsx"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-split-balance",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Multi-account balance consolidation error misleads the payer. `Pay.tsx` displays `holding.spendable` as what the user can send, and `fetchBalanceOf` (`src/lib/balances.ts`) sets `spendable` from the sum of the token accounts, while `chooseSourceAccount` in `src/lib/pay.ts` throws a `PaymentError` when no single account holds `rawAmount`. With 10 tokens in the ATA and 10 in an auxiliary account and a 15-token invoice, the UI allows clicking \"Pay 15\" but building then fails with \"split across 2 accounts... consolidate them first\".",
+   "where": [
+    "src/lib/balances.ts",
+    "src/lib/pay.ts",
+    "src/pages/Pay.tsx"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-base58-cook-suffix",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "`looksLikeName` / `validateRecipient` (`src/lib/names.ts`, `src/lib/request.ts`) misclassify a base58 address ending in `.cook`: `.cook` is five lowercase characters all in the base58 alphabet, so any 32-44-character key ending in those five characters returns true from `looksLikeName` and is forced down the name path, where `resolveRecipient` throws `not registered` and the recipient can never be paid.",
+   "where": [
+    "src/lib/names.ts",
+    "src/lib/request.ts"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-null-memo-drops",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "The `fetchJarHistory` prefilter in `src/lib/history.ts` relies on `entry.memo`: the RPC memo summary is treated as authoritative, so a node that does not populate it silently drops every real payment and reports \"No Cookie Jar payments have reached this address yet\", the one wrong answer the comment above `PAGE` says a jar must never give.",
+   "where": [
+    "src/lib/history.ts"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-live-check-missing",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "governance",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "`package.json` defines `\"live\": \"tsx scripts/live-check.ts\"`, and the README says `npm run live` runs 18 checks against the live chain, but the file `scripts/live-check.ts` does not exist in the repository (the `scripts/` directory is missing), so `npm run live` fails immediately with module not found.",
+   "where": [
+    "package.json",
+    "scripts/live-check.ts",
+    "README.md"
+   ],
+   "source_model": "coder-terminal (Gemini 3.8 Flash)",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-cb74f3a-fragment-stale-pay",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "cb74f3af9b46cb7e7afc59e705c0b7c7915b70ff",
+   "audit": "council",
+   "tags": [
+    "security",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Stale payment state can survive a route change. `Pay.tsx`'s initialization effect does not clear `request`, `resolved`, `priceUsd`, `enteredAmount`, or `holding` when `payload` changes; it only sets `stage` to \"reading\". Navigating from `#/pay/<A>` to `#/pay/<B>` while the component stays mounted and clicking during B's asynchronous load leaves `payBlocker` null on the stale state, and `pay()` can submit A's payment from the B URL.",
+   "where": [
+    "src/pages/Pay.tsx"
+   ],
+   "source_model": "gpt-5-6-luna (Kagi)",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-3cbeedc-memo-pipe-injection",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "3cbeedc891e3010aee464eb522d9afdc3fe43978",
+   "audit": "council",
+   "tags": [
+    "security",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Memo separator injection breaks memo structure. `buildMemo` in `src/lib/request.ts` replaces `|` with `/` in `ref` but does not escape `|` in `note`, so a request with `ref = \"INV123\"` and `note = \"foo|bar\"` produces `cookiejar:1|INV123|foo|bar`, and `parseMemo` then splits on the wrong separator and returns a ref and note different from what the link creator set.",
+   "where": [
+    "src/lib/request.ts"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": true,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-3cbeedc-wrapped-cook-trapped",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "3cbeedc891e3010aee464eb522d9afdc3fe43978",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "In `buildPayment` (`src/lib/pay.ts`), when the mint is wrapped COOK (`So11111111111111111111111111111111111111112`) the payment is a direct SPL token transfer without unwrapping or handling native lamports, which leaves the funds trapped in a token account if the recipient expected native COOK.",
+   "where": [
+    "src/lib/pay.ts"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-3cbeedc-second-memo-prefilter",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "3cbeedc891e3010aee464eb522d9afdc3fe43978",
+   "audit": "council",
+   "tags": [
+    "source",
+    "external",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "History is pre-filtered on the RPC memo summary: the candidate filter in `fetchJarHistory` (`src/lib/history.ts`) drops transactions when `s.memo` is present but not the jar memo, and `getSignaturesForAddress`'s `memo` field is the first memo's summary, so a payment whose jar memo is the second memo instruction can be silently excluded (false negative).",
+   "where": [
+    "src/lib/history.ts"
+   ],
+   "source_model": "deepseek-pro (V4 Pro, ccx)",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "cookie-tab-3cbeedc-usdtoraw-subunit",
+   "label": 0,
+   "repo": "TheBenMeadows/cookie-tab",
+   "ref": "3cbeedc891e3010aee464eb522d9afdc3fe43978",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "cookie-tab"
+   ],
+   "claim": "Precision loss in `usdToRaw` (`src/lib/quote.ts`) is a defect: for `usd = \"0.01\"`, `priceUsd = 1000000` and `decimals = 2`, the fixed-point division evaluates to `0n` and `usdToRaw` throws `QuoteError`, blocking legitimate payments whenever a dollar amount evaluates below one integer base unit.",
+   "where": [
+    "src/lib/quote.ts"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "orthodoxprayers-af4e178-headers-miss-pages",
+   "label": 0,
+   "repo": "mdws-org/orthodoxprayers",
+   "ref": "af4e178651e21fa2062828a4a0572a63e2341955",
+   "audit": "council",
+   "tags": [
+    "perf",
+    "external",
+    "council",
+    "orthodoxprayers"
+   ],
+   "claim": "`_headers` does not cover the new pages. It grants `max-age=0, must-revalidate` only to `/`, `/morning/`, `/morning/daybreak/`, `/hours/`, `/psalter/` and `/psalter/*`; the pages shipped in the latest releases (`/compline/`, `/evening/rule/`, `/canons/`, `/communion/`, `/communion/canon/`, `/communion/thanksgiving/`) match no rule, so that HTML ships with no Cache-Control at all and browsers may heuristically cache it, serving stale text on first visit before the service worker installs.",
+   "where": [
+    "_headers"
+   ],
+   "source_model": "gemini-agyx; devin-kimi-k3-high; devin-grok-4-6-high; devin-swe-2-high",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "orthodoxprayers-af4e178-indented-selector",
+   "label": 0,
+   "repo": "mdws-org/orthodoxprayers",
+   "ref": "af4e178651e21fa2062828a4a0572a63e2341955",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "orthodoxprayers"
+   ],
+   "claim": "In `evening/rule/index.html`, Chrysostom's 24 petitions are wrapped in `<div class=\"prayer indented\">`. The CSS rule `.prayer .prayer.indented` in `prayers.css` requires nesting and fails to match, so only `.prayer.indented p` applies (`text-indent: 1.5em; margin-bottom: 0`), and on phone screens multi-line petitions wrap to the left margin while single-line starts indent 1.5em, producing a jagged layout.",
+   "where": [
+    "prayers.css",
+    "evening/rule/index.html"
+   ],
+   "source_model": "gemini-agyx",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "orthodoxprayers-af4e178-opening-dead-rule",
+   "label": 0,
+   "repo": "mdws-org/orthodoxprayers",
+   "ref": "af4e178651e21fa2062828a4a0572a63e2341955",
+   "audit": "council",
+   "tags": [
+    "source",
+    "council",
+    "orthodoxprayers"
+   ],
+   "claim": "Dead rule in `prayers.css`: `.prayer.indented p.opening { text-indent: 0 }` matches nothing, because the only `.opening` paragraphs are in non-indented `.prayer` blocks.",
+   "where": [
+    "prayers.css",
+    "morning/daybreak/index.html"
+   ],
+   "source_model": "deepseek-flash",
+   "expanded": false,
+   "source": "council"
+  },
+  {
+   "id": "orthodoxprayers-af4e178-no-focus-ring",
+   "label": 0,
+   "repo": "mdws-org/orthodoxprayers",
+   "ref": "af4e178651e21fa2062828a4a0572a63e2341955",
+   "audit": "council",
+   "tags": [
+    "a11y",
+    "council",
+    "orthodoxprayers"
+   ],
+   "claim": "`prayers.css` has no `:focus` style on `.prayer a` / `.rubric-line a`, so links have no visible focus indicator: a reader using a Bluetooth keyboard with the phone gets no visible ring as focus moves.",
+   "where": [
+    "prayers.css"
+   ],
+   "source_model": "devin-grok-4-6-high",
+   "expanded": true,
+   "source": "council"
+  },
+  {
+   "id": "A-cache-porcine-fonts",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "`_headers` cache rules apply only to the paths they name, so the four WOFF2 files under `/experiments/porcine/fonts/` and the two `/experiments/dls/` JPEGs fall to the Pages default `max-age=0, must-revalidate` and are revalidated on every visit.",
+   "where": [
+    "_headers",
+    "experiments/porcine/fonts/",
+    "experiments/dls/"
+   ],
+   "derived_from": "0819-headers-cache-coverage",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-charset-home",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "`index.html` places its `<meta charset>` beyond the first 1024 bytes of the document because a long comment sits above `<html>`, outside the window browsers use for encoding sniffing.",
+   "where": [
+    "index.html"
+   ],
+   "derived_from": "0819-charset-late",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-alt-working-log",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "`blog/posts/essentialism-the-working-log.md` uses bare `![](\u2026)` images with no alt text and has no `image_alt` front-matter field for its lead image, so its images ship with `alt=\"\"`.",
+   "where": [
+    "blog/posts/essentialism-the-working-log.md",
+    "scripts/build-blog.mjs"
+   ],
+   "derived_from": "0819-blog-alt-empty",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-heading-projects",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "The `/projects/` page's heading outline skips a level: its card titles are `<h3>` directly under the page `<h1>`, where `/experiments/` uses `<h2>` for the same role.",
+   "where": [
+    "projects/index.html",
+    "experiments/index.html"
+   ],
+   "derived_from": "0819-home-heading-outline",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-dup-font-porcine",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "`experiments/porcine/fonts/inter-var-latin.woff2` is byte-identical to `fonts/publicsans-v1.woff2` but served at a different URL, so it cannot share the cache entry and additionally inherits the default `max-age=0`.",
+   "where": [
+    "experiments/porcine/fonts/inter-var-latin.woff2",
+    "fonts/publicsans-v1.woff2",
+    "_headers"
+   ],
+   "derived_from": "0819-duplicate-font",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-pre-light-essentialism",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819",
+    "mut-A"
+   ],
+   "claim": "`art/essentialism/index.html` renders the on-chain generator listing in a `bg-zinc-900` `<pre>` block that never receives a light-theme override, so in light mode its text is about 2.29:1 against its background.",
+   "where": [
+    "art/essentialism/index.html",
+    "src/input.css"
+   ],
+   "derived_from": "0819-mirrors-pre-light",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-search-index-list",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`scripts/build-search-index.mjs` lists pages by hand and its list omits `/marfa/` and `/ai/`, so neither page can be found through site search while the blog posts, which arrive through `blog/pages.json`, can.",
+   "where": [
+    "scripts/build-search-index.mjs"
+   ],
+   "derived_from": "0927-build-stamp-list",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-blog-cleanup",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "The output loop in `scripts/build-blog.mjs` deletes any directory under `blog/` that contains an `index.html` before writing posts, so a hand-made page placed under `blog/` vanishes on the next build.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "derived_from": "0927-speaking-cleanup",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-readme-check-ports",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`scripts/sync-readme-mirrors.mjs --check` strips the port and username from `ssh://`-style addresses before comparing, so changing the SSH port in `mirrors.json` while `readme.md` still prints the old one passes the check.",
+   "where": [
+    "scripts/sync-readme-mirrors.mjs",
+    "mirrors.json",
+    "readme.md"
+   ],
+   "derived_from": "0927-mirrors-check-ports",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-dls-lazy-lead",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "perf",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`experiments/dls/index.html` marks its lead image `loading=\"lazy\"` although it sits directly under the h1, so the largest above-the-fold image waits on layout before it is requested.",
+   "where": [
+    "experiments/dls/index.html"
+   ],
+   "derived_from": "0927-marfa-lazy-lead",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-ai-escaping",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`scripts/build-ai.mjs` interpolates each card link's `url` and each quote's `url` raw into `href` attributes, and nothing checks the scheme, so a `javascript:` URL added to `ai/wins.json` ships as a live link on /ai/.",
+   "where": [
+    "scripts/build-ai.mjs",
+    "scripts/check-ai-wins.mjs",
+    "ai/wins.json"
+   ],
+   "derived_from": "0927-speaking-escaping",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-empty-link-ordinals",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`blog/posts/bitcoin-ordinals-svg-vs-svgz.md` contains a stray `[](https://x.com/TheBenMeadows/status/\u2026)` after a citation link, which renders as an anchor with no text or label.",
+   "where": [
+    "blog/posts/bitcoin-ordinals-svg-vs-svgz.md"
+   ],
+   "derived_from": "0927-empty-link-2025",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "A-headers-older-sections",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-A"
+   ],
+   "claim": "`_headers` has no entries for `/archive/`, `/essentialism/` or `/experiments/dls/`, so those pages send no `Onion-Location` while the other sections do, and the `/experiments/dls/` WebP images get no cache rule while comparable media get `max-age=604800`.",
+   "where": [
+    "_headers",
+    "archive/index.html",
+    "essentialism/index.html",
+    "experiments/dls/"
+   ],
+   "derived_from": "0927-headers-new-sections",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-headers-onion-glued",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "In `_headers`, 20 path blocks have their `Onion-Location` value glued onto the end of the `Cache-Control` line (no line break between them), so no `Onion-Location` header is emitted for any path and Tor Browser is never offered the onion mirror.",
+   "where": [
+    "_headers"
+   ],
+   "derived_from": "0819-headers-onion-glued",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-manifest-guard-gap",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The `_headers` guard in `scripts/build-manifest.mjs` catches duplicate paths but would not catch an indented header line that carries a second `name: value` pair glued onto it, so a header-merging regression passes the build.",
+   "where": [
+    "scripts/build-manifest.mjs",
+    "_headers"
+   ],
+   "derived_from": "0819-manifest-guard-gap",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-blog-raw-html",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`scripts/build-blog.mjs` defines a marked `RENDERER` with no `html` method and merges it onto marked's defaults, whose `html` renderer is a passthrough, so raw `<script>` or `<img onerror=\u2026>` written into `blog/posts/*.md` reaches the generated page unescaped. The source comment near the renderer claims stray markup is escaped.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "derived_from": "0819-blog-raw-html",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-headers-cache-coverage",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "perf",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`_headers` cache rules apply only to the paths they name, so `/blog/media/**` images, every `/experiments/*/app.js` and `style.css`, `/projects/poap-saver/app.js` and the whole `/experiments/poap-vault/img/` set (over 700 WebP files) fall to the Pages default `max-age=0, must-revalidate` and are not browser-cacheable.",
+   "where": [
+    "_headers",
+    "blog/media/",
+    "experiments/",
+    "projects/poap-saver/"
+   ],
+   "derived_from": "0819-headers-cache-coverage",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-build-feed-empty",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`scripts/build-feed.mjs` catches a git failure, warns, and still writes a valid-looking empty feed with a hardcoded `2026-01-01` timestamp instead of throwing, so a broken build produces a signed, manifest-hashed empty feed.",
+   "where": [
+    "scripts/build-feed.mjs"
+   ],
+   "derived_from": "0819-build-feed-empty",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-build-stamp-skips",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`scripts/build-stamp.mjs` skips a missing page with a warning and still exits 0, and nothing compares the number of pages stamped against the expected count.",
+   "where": [
+    "scripts/build-stamp.mjs"
+   ],
+   "derived_from": "0819-build-stamp-skips",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-check-readme-unrun",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`package.json` defines a `check:readme` script that nothing runs; the build runs the rewriting variant instead, and `readme.md` is not part of the published artifact, so the drift guard on the readme can never fail anything.",
+   "where": [
+    "package.json",
+    "scripts/sync-readme-mirrors.mjs",
+    ".github/workflows/"
+   ],
+   "derived_from": "0819-check-readme-unrun",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-npmrc-comment",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The comment in `.npmrc` claims no package in the dependency tree declares an install hook, but the lockfile's `fsevents` 2.3.3 entry declares one (optional, darwin-only), so the justification written next to `ignore-scripts=true` is false.",
+   "where": [
+    ".npmrc",
+    "package-lock.json"
+   ],
+   "derived_from": "0819-npmrc-comment",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-search-focus-trap",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The search overlay declares `aria-modal=\"true\"` but `search.js` has no Tab trap (it tracks `lastFocus` only), so keyboard focus escapes the dialog on the second Tab press.",
+   "where": [
+    "search.js",
+    "index.html"
+   ],
+   "derived_from": "0819-search-focus-trap",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-pendulum-names",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "`/experiments/pendulum/` has 11 buttons, 10 range sliders and a select with no accessible names (the visible labels are unassociated sibling spans), and its CSS sets `input[type=range]:focus { outline: none; }` with no replacement focus style.",
+   "where": [
+    "experiments/pendulum/index.html",
+    "experiments/pendulum/"
+   ],
+   "derived_from": "0819-pendulum-names",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-poap-vault-tabs",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The collection filters on `/experiments/poap-vault/` use `role=\"tab\"` with no corresponding tabpanel and no arrow-key handling, so the tab semantics are unbuilt; they behave as filter buttons.",
+   "where": [
+    "experiments/poap-vault/index.html",
+    "experiments/poap-vault/app.js"
+   ],
+   "derived_from": "0819-poap-vault-tabs",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-youtube-relme",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "content",
+    "0927",
+    "external",
+    "mut-B"
+   ],
+   "claim": "The `rel=\"me\"` link to YouTube on the home page and on `/profiles/` points at `youtube.com/thebenmeadows`, which returns 404; the `@thebenmeadows` handle form of the URL is the one that resolves.",
+   "where": [
+    "index.html",
+    "profiles/index.html"
+   ],
+   "derived_from": "0819-youtube-relme",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "B-home-heading-outline",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "a11y",
+    "0927",
+    "mut-B"
+   ],
+   "claim": "The home page's heading outline is `h1, h3, h3`: its two `.section-label` headings are `<h3>` where every other page uses `<h2>` for the same role.",
+   "where": [
+    "index.html",
+    "experiments/index.html",
+    "projects/index.html"
+   ],
+   "derived_from": "0819-home-heading-outline",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-onion-search-count",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "security",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "In `_headers`, all 21 page blocks from `/` down to `/search/` have their `Onion-Location` value glued onto the end of the `Cache-Control` line (no line break between them), so no `Onion-Location` header is emitted for any page and Tor Browser is never offered the onion mirror.",
+   "where": [
+    "_headers"
+   ],
+   "derived_from": "0819-headers-onion-glued",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-guard-no-dupes",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "The `_headers` guard in `scripts/build-manifest.mjs` catches neither duplicate paths nor an indented header line carrying a second `name: value` pair, so both regressions pass the build.",
+   "where": [
+    "scripts/build-manifest.mjs",
+    "_headers"
+   ],
+   "derived_from": "0819-manifest-guard-gap",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-pendulum-button-count",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "`/experiments/pendulum/` has 16 buttons, 10 range sliders and a select with no accessible names (the visible labels are unassociated sibling spans), and its CSS sets `input[type=range]:focus { outline: none; }` with no replacement focus style.",
+   "where": [
+    "experiments/pendulum/index.html",
+    "experiments/pendulum/"
+   ],
+   "derived_from": "0819-pendulum-names",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-eth-duplicate-card",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "content",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "`mirrors/index.html` renders two name cards with the identical `.eth.limo` href, while the surrounding prose describes four names and the grid shows five.",
+   "where": [
+    "mirrors/index.html"
+   ],
+   "derived_from": "0819-sol-duplicate-card",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-stamp-list-ai",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-C"
+   ],
+   "claim": "`scripts/build-stamp.mjs` lists pages by hand and its \"every page accounted for\" check counts only that list, which omits `/ai/`, so the AI & Agents page ships with no build stamp while the blog is stamped.",
+   "where": [
+    "scripts/build-stamp.mjs",
+    "scripts/build-ai.mjs"
+   ],
+   "derived_from": "0927-build-stamp-list",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-tailwind-marfa",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-C"
+   ],
+   "claim": "`tailwind.config.js` scans `ai/` and `speaking/**` for class names but not `marfa/`, so a utility class used only on the Marfa page would be purged from the stylesheet and ship unstyled.",
+   "where": [
+    "tailwind.config.js",
+    "marfa/index.html"
+   ],
+   "derived_from": "0927-tailwind-speaking",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-speaking-origin-raw",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-C"
+   ],
+   "claim": "`scripts/build-speaking.mjs` writes each transcript's `origin` URL raw into the \"Original recording\" `href`, so a `\"` in that front-matter value breaks out of the attribute on the transcript page.",
+   "where": [
+    "scripts/build-speaking.mjs"
+   ],
+   "derived_from": "0927-speaking-escaping",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-ai-dates-rendered",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-C"
+   ],
+   "claim": "`scripts/check-ai-wins.mjs` validates dates with `Date.parse`, which rolls impossible dates over (`2026-02-30` becomes March 2), and `scripts/build-ai.mjs` then prints the rolled-over date on the card, so /ai/ and `ai/wins.json` disagree.",
+   "where": [
+    "scripts/check-ai-wins.mjs",
+    "scripts/build-ai.mjs"
+   ],
+   "derived_from": "0927-ai-wins-dates",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-mirrors-check-host-only",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-C"
+   ],
+   "claim": "`scripts/check-mirrors-page.mjs` reduces `http(s)` addresses to their host before matching, so moving a mirror to a new path on `thebenmeadows.com` while the page still prints the old path passes the check.",
+   "where": [
+    "scripts/check-mirrors-page.mjs",
+    "mirrors.json",
+    "mirrors/index.html"
+   ],
+   "derived_from": "0927-mirrors-check-ports",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-feed-build-clock",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "`scripts/build-feed.mjs` catches a git failure, warns, and still writes a valid-looking empty feed stamped with the build clock (`new Date()`) instead of throwing, so a broken build produces a signed, manifest-hashed empty feed that differs on every host.",
+   "where": [
+    "scripts/build-feed.mjs"
+   ],
+   "derived_from": "0819-build-feed-empty",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-frontmatter-date-direction",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "In `scripts/build-blog.mjs`, the `date` front-matter field gets none of the `YYYY-MM-DD` validation that `updated` already has, so a malformed `date` lands raw in both the page and the Atom feed.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "derived_from": "0819-frontmatter-unescaped",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-dls-alt",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "a11y",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "`/experiments/dls/` ships two unoptimized JPEGs, `HEw3HB0WoAAHoBW.jpeg` (about 706 KB) and `rzVCLxC8.jpg` (about 345 KB), and neither `<img>` carries an `alt` attribute, so screen readers announce both by filename.",
+   "where": [
+    "experiments/dls/index.html",
+    "experiments/dls/HEw3HB0WoAAHoBW.jpeg",
+    "experiments/dls/rzVCLxC8.jpg"
+   ],
+   "derived_from": "0819-dls-jpegs",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "C-readme-never-run",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-C"
+   ],
+   "claim": "`package.json` defines a `check:readme` script that nothing runs, and the `build` script never invokes `scripts/sync-readme-mirrors.mjs` in any mode, so `readme.md` drifts from `mirrors.json` until someone regenerates it by hand.",
+   "where": [
+    "package.json",
+    "scripts/sync-readme-mirrors.mjs"
+   ],
+   "derived_from": "0819-check-readme-unrun",
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-ai-unescaped-summary",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-ai.mjs` passes only `title` through `esc`; `summary`, `where` and each quote's text are interpolated raw into the card and blockquote markup, so a `<` in `ai/wins.json` reaches /ai/ as markup.",
+   "where": [
+    "scripts/build-ai.mjs",
+    "ai/wins.json"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-ai-wins-http",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/check-ai-wins.mjs` accepts any link whose `url` starts with `http`, so a plain `http://` link in `ai/wins.json` passes the guard and ships on /ai/.",
+   "where": [
+    "scripts/check-ai-wins.mjs",
+    "ai/wins.json"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-ai-links-ci-403",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/check-ai-links.mjs --ci` exits 1 on any non-2xx response, so a 403 or 429 from a venue that blocks scripts fails the run as if the entry were dead.",
+   "where": [
+    "scripts/check-ai-links.mjs"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-speaking-raw-html",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "security",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-speaking.mjs` defines a marked `RENDERER` with only a `paragraph` method, so marked's passthrough `html` renderer still applies and raw `<script>` in a transcript reaches the generated page.",
+   "where": [
+    "scripts/build-speaking.mjs",
+    "speaking/transcripts/"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-search-index-unlisted",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-search-index.mjs` appends every entry from `blog/pages.json` to its page list, including the one marked `unlisted`, so the superseded 2025 highlights post appears in site search beside the current version.",
+   "where": [
+    "scripts/build-search-index.mjs",
+    "scripts/build-blog.mjs",
+    "blog/posts/art-tech-highlights-2025.md"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-blog-related-silent",
+   "label": 0,
+   "audit": "0927",
+   "tags": [
+    "source",
+    "0927",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-blog.mjs` skips a `related:` slug that matches no post without an error, so a typo in a post's front matter drops its \"See also\" row silently.",
+   "where": [
+    "scripts/build-blog.mjs"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-feed-subject-raw",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "security",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-feed.mjs` writes the commit subject raw into the Atom `<title>` and `<content>` and the RSS `<title>` and `<description>`, so a `<` or `&` in a commit message produces an invalid `feed.xml` and `rss.xml`.",
+   "where": [
+    "scripts/build-feed.mjs"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-sign-release-sec-argv",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "security",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/sign-release.sh` passes the release key to `nak` as `--sec \"$NOSTR_SECRET_KEY\"`, so the nsec appears in argv and is visible to every same-uid process during publish, contrary to the script's own header.",
+   "where": [
+    "scripts/sign-release.sh"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-version-css-silent",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/version-css.mjs` renames `output.css` to its hashed name and exits 0 even when no page references `/output.css`, leaving every page pointing at a stylesheet that no longer exists in `dist/`.",
+   "where": [
+    "scripts/version-css.mjs"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-manifest-build-clock",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/build-manifest.mjs` records the build time in the manifest, so Cloudflare and Netlify produce different `manifest.json` bytes for the same commit and the release signature verifies on only one of them.",
+   "where": [
+    "scripts/build-manifest.mjs"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-onchain-check-tzkt",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/check-onchain-code.mjs` fetches the generator from the TzKT indexer on every run, and `build:netlify` runs it, so a TzKT outage fails every deploy.",
+   "where": [
+    "scripts/check-onchain-code.mjs",
+    "package.json"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-readme-raw-slug",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "source",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`scripts/sync-readme-mirrors.mjs` falls back to printing the raw `kind/network` slug for any pair missing from `LABELS`, so a newly added network ships to `readme.md` as an unlabelled row.",
+   "where": [
+    "scripts/sync-readme-mirrors.mjs",
+    "mirrors.json"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  },
+  {
+   "id": "D-me-webp-cache",
+   "label": 0,
+   "audit": "0819",
+   "tags": [
+    "perf",
+    "0819",
+    "mut-D"
+   ],
+   "claim": "`_headers` caches `/me.png` for a day but has no rule for `/me.webp`, the avatar every current browser actually fetches through the `<picture>` source, so it is revalidated on every navigation.",
+   "where": [
+    "_headers",
+    "index.html"
+   ],
+   "derived_from": null,
+   "source": "mutated",
+   "adjudicated": false
+  }
+ ]
+}
