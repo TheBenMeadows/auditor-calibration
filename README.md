@@ -1,6 +1,6 @@
 # Calibrating auditors of code-review claims
 
-Code, cases, run data and paper source for "Calibrating Auditors of Code-Review Claims, and Auditing Their Labels" (Benjamin Meadows, 2026). Paper: [Zenodo DOI to be added].
+Code, cases, run data and paper source for "Calibrating Auditors of Code-Review Claims, and Auditing Their Labels" (Benjamin Meadows, 2026). Paper: https://doi.org/10.5281/zenodo.24449095
 
 Claude Opus 5.5, Fable 5.1, Sonnet 5.5 and Haiku 5.5 (in one harness), DeepSeek Flash (in the same harness, behind a proxy) and SWE-2 High (in the Devin CLI) re-checked 144 labelled claims about four public repositories and reported a probability that each claim is a real finding. This repository holds every completed run row, the cases with their label sources, the scripts that compute every number in the paper, and the paper's LaTeX source.
 
