@@ -13,7 +13,7 @@
 \setlength{\emergencystretch}{2em}
 \input{numbers}
 
-\title{When the Eval Is Wrong More Often Than the Agent:\\Calibrating Auditors of Code-Review Claims}
+\title{Calibrating Auditors of Code-Review Claims,\\and Auditing Their Labels}
 \author{Benjamin Meadows\\Independent Researcher\\\texttt{ben@benjaminmeadows.com}}
 \date{November 2026}
 
@@ -344,13 +344,17 @@ On the pooled set, all six verifier lanes reach AUROC between \N{swe2-auroc} and
 
 Language models are part of the subject of this paper and were also used to produce it.
 \begin{itemize}
-  \item Claude Code, running Claude Opus 5.5, wrote the runner and analysis scripts and drafted the text under the author's direction; the author set the questions, made every ruling and analysis decision, and edited the text.
+  \item Claude Code, running Claude Opus 5.5, wrote the runner and analysis scripts and drafted the text under the author's direction; the author set the questions, made every ruling and analysis decision, and approved the final text.
   \item A Claude model wrote the mutated claims (Section~\ref{sec:cases}).
   \item Models from other providers (among them GPT-6 Astra, Gemini 3.8 Flash, Gemini 4 Argon and Carbon, Kimi K3, Grok 4.7, DeepSeek Flash and SWE-2) reviewed the analysis and drafts in several rounds. Their reviews changed the analysis plan, including the AUROC test (Section~\ref{sec:analysis}). Every claim a review made was checked by rerunning the computation or reading the file before it was acted on.
   \item The blind panel of Section~\ref{sec:labels} is itself a set of models.
   \item Every reference was checked against its primary listing (publisher, DBLP, arXiv or Crossref).
 \end{itemize}
 Every number in the text is generated from the analysis outputs by script, and an audit that recomputed the numbers from source with models of other families checked them before release. The author is responsible for the paper's content.
+
+\section*{Competing interests}
+
+The author has no affiliation with, and received no funding from, any of the model providers whose models are evaluated here.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
